@@ -45,6 +45,9 @@ User Roles:
 - Dashboard page showing user's clubs and "Create Club" link
 - Create Club form with fields: name, contact_email, location_text, about_text
 - Automatic club admin relationship creation with 'owner' role
+- Membership request system: users can request to join clubs
+- Admin member management: view pending requests, approve/reject, suspend/remove members
+- Membership status display on club pages (pending, active, suspended, expired)
 
 ## Configuration
 For local Laragon development, update `config.local.php`:
