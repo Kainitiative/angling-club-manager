@@ -1,5 +1,5 @@
 -- Angling Club Manager MVP
--- Schema version: 0.1
+-- Schema version: 0.2
 -- Database: angling_club_manager
 -- MySQL/MariaDB
 
@@ -15,7 +15,13 @@ CREATE TABLE users (
   name VARCHAR(120) NOT NULL,
   email VARCHAR(190) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  profile_picture_url VARCHAR(500) NULL,
+  dob DATE NULL,
+  phone VARCHAR(30) NULL,
+  town VARCHAR(120) NULL,
   city VARCHAR(120) NULL,
+  country VARCHAR(120) NULL,
+  gender ENUM('male', 'female', 'other', 'prefer_not_to_say') NULL,
   role ENUM('user', 'super_admin') NOT NULL DEFAULT 'user',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP
