@@ -5,7 +5,7 @@ $config = require __DIR__ . '/config.local.php';
 
 $db = $config['db'];
 
-$dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+$dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";
 
 try {
   $pdo = new PDO($dsn, $db['user'], $db['pass'], [

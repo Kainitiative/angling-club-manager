@@ -35,8 +35,6 @@ Thumbs.db
 # =========================
 # Replit specific
 # =========================
-.replit
-replit.nix
 
 # =========================
 # Database dumps

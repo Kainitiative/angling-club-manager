@@ -1,17 +1,14 @@
 <?php
 declare(strict_types=1);
 
-// Always show errors in local dev (we'll harden this later)
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
-// Start session for auth
 if (session_status() !== PHP_SESSION_ACTIVE) {
   session_start();
 }
 
-// Load local config (kept out of git)
 $configPath = __DIR__ . '/../config.local.php';
 if (!file_exists($configPath)) {
   http_response_code(500);
@@ -27,7 +24,7 @@ if (!isset($config['db'])) {
 
 $db = $config['db'];
 
-$dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+$dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";
 
 try {
   $pdo = new PDO($dsn, $db['user'], $db['pass'], [
@@ -38,5 +35,3 @@ try {
   http_response_code(500);
   exit("DB connection failed: " . htmlspecialchars($e->getMessage()));
 }
-
-// Make $pdo available everywhere that includes bootstrap.php
