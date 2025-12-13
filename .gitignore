@@ -1,0 +1,45 @@
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+config.local.php
+config.replit.php
+
+# =========================
+# Dependency directories
+# =========================
+/vendor/
+
+# =========================
+# Logs & cache
+# =========================
+*.log
+/cache/
+/tmp/
+
+# =========================
+# Uploaded files (future)
+# =========================
+/uploads/
+/storage/
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# =========================
+# Replit specific
+# =========================
+.replit
+replit.nix
+
+# =========================
+# Database dumps
+# =========================
+*.sql.gz
+*.dump
