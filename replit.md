@@ -50,6 +50,20 @@ $pass = '';
 
 For Replit (PostgreSQL), use environment variables: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
 
+## Database Migrations
+When adding or changing database columns:
+1. Create a new file in `/db/updates/` named `NNN_description.sql` (e.g., `001_add_user_bio.sql`)
+2. Use only ALTER statements - no DROP TABLE, no engine changes
+3. Do NOT use `ADD COLUMN IF NOT EXISTS` syntax
+4. Migrations auto-run on page refresh via `app/migrate.php`
+5. Applied migrations are tracked in the `schema_migrations` table
+
+Example migration file:
+```sql
+ALTER TABLE users ADD COLUMN bio TEXT NULL;
+ALTER TABLE users ADD COLUMN website VARCHAR(255) NULL;
+```
+
 ## Important Notes
 - config.local.php is .gitignored (contains sensitive credentials)
 - Code supports both MySQL and PostgreSQL drivers
