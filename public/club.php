@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/bootstrap.php';
 
 $slug = $_GET['slug'] ?? '';
+$message = '';
+$messageType = '';
 
 if (!$slug) {
   http_response_code(404);
@@ -19,17 +21,68 @@ if (!$club) {
   exit('Club not found');
 }
 
-if (!$club['is_public']) {
-  $userId = current_user_id();
+$userId = current_user_id();
+$isLoggedIn = (bool)$userId;
+$isAdmin = false;
+$isMember = false;
+$membershipStatus = null;
+
+if ($userId) {
+  $stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
+  $stmt->execute([$club['id'], $userId]);
+  $adminRow = $stmt->fetch();
+  $isAdmin = (bool)$adminRow;
+  
+  $stmt = $pdo->prepare("SELECT membership_status FROM club_members WHERE club_id = ? AND user_id = ?");
+  $stmt->execute([$club['id'], $userId]);
+  $memberRow = $stmt->fetch();
+  if ($memberRow) {
+    $membershipStatus = $memberRow['membership_status'];
+    $isMember = ($membershipStatus === 'active');
+  }
+}
+
+if (!$club['is_public'] && !$isAdmin && !$isMember) {
   if (!$userId) {
     http_response_code(403);
     exit('This club is private');
   }
-  $stmt = $pdo->prepare("SELECT id FROM club_admins WHERE club_id = ? AND user_id = ?");
-  $stmt->execute([$club['id'], $userId]);
-  if (!$stmt->fetch()) {
-    http_response_code(403);
-    exit('This club is private');
+  http_response_code(403);
+  exit('This club is private');
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+  if (!$userId) {
+    redirect('/public/auth/login.php');
+  }
+  
+  if ($_POST['action'] === 'request_join' && !$isAdmin && !$membershipStatus) {
+    try {
+      $stmt = $pdo->prepare("INSERT INTO club_members (club_id, user_id, membership_status) VALUES (?, ?, 'pending')");
+      $stmt->execute([$club['id'], $userId]);
+      $membershipStatus = 'pending';
+      $message = 'Your membership request has been submitted. The club admin will review it shortly.';
+      $messageType = 'success';
+    } catch (PDOException $e) {
+      if (strpos($e->getMessage(), 'Duplicate') !== false || $e->getCode() == 23000) {
+        $stmt = $pdo->prepare("SELECT membership_status FROM club_members WHERE club_id = ? AND user_id = ?");
+        $stmt->execute([$club['id'], $userId]);
+        $row = $stmt->fetch();
+        $membershipStatus = $row['membership_status'] ?? null;
+        $message = 'You already have a membership record with this club.';
+        $messageType = 'warning';
+      } else {
+        throw $e;
+      }
+    }
+  }
+  
+  if ($_POST['action'] === 'cancel_request' && $membershipStatus === 'pending') {
+    $stmt = $pdo->prepare("DELETE FROM club_members WHERE club_id = ? AND user_id = ?");
+    $stmt->execute([$club['id'], $userId]);
+    $membershipStatus = null;
+    $message = 'Your membership request has been cancelled.';
+    $messageType = 'info';
   }
 }
 
@@ -56,8 +109,6 @@ $address = array_filter([
   $club['postcode'] ?? null,
   $club['country'] ?? null,
 ]);
-
-$isLoggedIn = (bool)current_user_id();
 ?>
 <!doctype html>
 <html lang="en">
@@ -104,6 +155,9 @@ $isLoggedIn = (bool)current_user_id();
     .info-card {
       border-left: 4px solid #0d6efd;
     }
+    .membership-card {
+      border: 2px solid #0d6efd;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -139,8 +193,18 @@ $isLoggedIn = (bool)current_user_id();
         <h1 class="display-5 fw-bold mb-2"><?= e($club['name']) ?></h1>
         <?php if ($club['town'] || $club['city']): ?>
           <p class="lead mb-0 opacity-75">
-            📍 <?= e($club['town'] ?: $club['city']) ?><?= $club['county'] ? ', ' . e($club['county']) : '' ?>
+            <?= e($club['town'] ?: $club['city']) ?><?= $club['county'] ? ', ' . e($club['county']) : '' ?>
           </p>
+        <?php endif; ?>
+      </div>
+      <div class="col-auto">
+        <?php if ($isAdmin): ?>
+          <span class="badge bg-warning text-dark fs-6 p-2">Admin</span>
+          <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Manage Members</a>
+        <?php elseif ($isMember): ?>
+          <span class="badge bg-success fs-6 p-2">Member</span>
+        <?php elseif ($membershipStatus === 'pending'): ?>
+          <span class="badge bg-info fs-6 p-2">Request Pending</span>
         <?php endif; ?>
       </div>
     </div>
@@ -148,6 +212,14 @@ $isLoggedIn = (bool)current_user_id();
 </section>
 
 <div class="container py-5">
+  
+  <?php if ($message): ?>
+    <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
+      <?= e($message) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <?php endif; ?>
+
   <div class="row">
     <div class="col-lg-8">
       
@@ -170,7 +242,7 @@ $isLoggedIn = (bool)current_user_id();
           <div class="card-body">
             <?php foreach ($fishingStyles as $style): ?>
               <span class="fishing-style-badge">
-                🎣 <?= e($fishingStyleLabels[$style] ?? ucfirst($style)) ?>
+                <?= e($fishingStyleLabels[$style] ?? ucfirst($style)) ?>
               </span>
             <?php endforeach; ?>
           </div>
@@ -181,10 +253,43 @@ $isLoggedIn = (bool)current_user_id();
     
     <div class="col-lg-4">
       
+      <?php if (!$isAdmin && !$isMember): ?>
+        <div class="card membership-card mb-4">
+          <div class="card-body text-center">
+            <?php if (!$isLoggedIn): ?>
+              <h5 class="mb-3">Want to join this club?</h5>
+              <p class="text-muted">Sign in or create an account to request membership.</p>
+              <a href="/" class="btn btn-primary">Log In</a>
+              <a href="/public/auth/register.php" class="btn btn-outline-primary">Sign Up</a>
+            <?php elseif ($membershipStatus === 'pending'): ?>
+              <h5 class="mb-3">Request Pending</h5>
+              <p class="text-muted">Your membership request is being reviewed by the club admin.</p>
+              <form method="post">
+                <input type="hidden" name="action" value="cancel_request">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Cancel Request</button>
+              </form>
+            <?php elseif ($membershipStatus === 'suspended'): ?>
+              <h5 class="mb-3">Membership Suspended</h5>
+              <p class="text-muted">Your membership has been suspended. Contact the club admin for more information.</p>
+            <?php elseif ($membershipStatus === 'expired'): ?>
+              <h5 class="mb-3">Membership Expired</h5>
+              <p class="text-muted">Your membership has expired. Contact the club admin to renew.</p>
+            <?php else: ?>
+              <h5 class="mb-3">Join This Club</h5>
+              <p class="text-muted">Request to become a member of this angling club.</p>
+              <form method="post">
+                <input type="hidden" name="action" value="request_join">
+                <button type="submit" class="btn btn-primary btn-lg w-100">Request to Join</button>
+              </form>
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+      
       <?php if (!empty($address)): ?>
         <div class="card info-card mb-4">
           <div class="card-header bg-white">
-            <h6 class="mb-0">📍 Location</h6>
+            <h6 class="mb-0">Location</h6>
           </div>
           <div class="card-body">
             <?php foreach ($address as $line): ?>
@@ -197,7 +302,7 @@ $isLoggedIn = (bool)current_user_id();
       <?php if ($club['contact_email']): ?>
         <div class="card info-card mb-4">
           <div class="card-header bg-white">
-            <h6 class="mb-0">✉️ Contact</h6>
+            <h6 class="mb-0">Contact</h6>
           </div>
           <div class="card-body">
             <a href="mailto:<?= e($club['contact_email']) ?>"><?= e($club['contact_email']) ?></a>
@@ -224,5 +329,6 @@ $isLoggedIn = (bool)current_user_id();
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

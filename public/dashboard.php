@@ -7,33 +7,41 @@ require_login();
 
 $userId = current_user_id();
 
-// Load current user (ASSOC so keys work predictably)
 $stmt = $pdo->prepare("SELECT id, name, email, profile_picture_url, dob, phone, town, city, country, gender FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// If DB was reset (schema.sql drop/recreate), the session might point to a user id that no longer exists.
-// In that case, force logout and send back to login.
 if (!$user) {
   session_unset();
   session_destroy();
-  header('Location: /auth/login.php');
+  header('Location: /public/auth/login.php');
   exit;
 }
 
-// Load clubs where the user is an admin
 $stmt = $pdo->prepare("
-  SELECT c.id, c.name, c.slug, c.contact_email, c.location_text, ca.admin_role
+  SELECT c.id, c.name, c.slug, c.contact_email, c.location_text, ca.admin_role,
+         (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id AND cm.membership_status = 'pending') as pending_count,
+         (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id AND cm.membership_status = 'active') as member_count
   FROM clubs c
   JOIN club_admins ca ON c.id = ca.club_id
   WHERE ca.user_id = ?
   ORDER BY c.created_at DESC
 ");
 $stmt->execute([$userId]);
-$clubs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$adminClubs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("
+  SELECT c.id, c.name, c.slug, c.contact_email, c.town, cm.membership_status, cm.joined_at
+  FROM clubs c
+  JOIN club_members cm ON c.id = cm.club_id
+  WHERE cm.user_id = ?
+  ORDER BY cm.joined_at DESC
+");
+$stmt->execute([$userId]);
+$memberClubs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $hasOwnClub = false;
-foreach ($clubs as $club) {
+foreach ($adminClubs as $club) {
   if (($club['admin_role'] ?? '') === 'owner') {
     $hasOwnClub = true;
     break;
@@ -49,6 +57,11 @@ $location = array_filter([
   $user['country'] ?? null
 ]);
 $locationStr = $location ? implode(', ', $location) : 'Not set';
+
+$totalPending = 0;
+foreach ($adminClubs as $club) {
+  $totalPending += (int)($club['pending_count'] ?? 0);
+}
 ?>
 <!doctype html>
 <html>
@@ -71,6 +84,13 @@ $locationStr = $location ? implode(', ', $location) : 'Not set';
 
 <div class="container py-4">
 
+  <?php if ($totalPending > 0): ?>
+    <div class="alert alert-warning d-flex align-items-center mb-4">
+      <strong class="me-2">You have <?= $totalPending ?> pending membership request<?= $totalPending > 1 ? 's' : '' ?>!</strong>
+      <span class="text-muted">Review them in the club management section below.</span>
+    </div>
+  <?php endif; ?>
+
   <div class="row g-4">
     <div class="col-md-4">
       <div class="card shadow-sm">
@@ -82,58 +102,123 @@ $locationStr = $location ? implode(', ', $location) : 'Not set';
         </div>
       </div>
 
-      <div class="card shadow-sm mt-4">
-        <div class="card-body">
-          <h6 class="mb-3">Quick actions</h6>
-          <a class="btn btn-primary w-100" href="/public/create_club.php">Create Club</a>
+      <?php if (!$hasOwnClub): ?>
+        <div class="card shadow-sm mt-4">
+          <div class="card-body">
+            <h6 class="mb-3">Quick actions</h6>
+            <a class="btn btn-primary w-100" href="/public/create_club.php">Create Club</a>
+          </div>
         </div>
-      </div>
+      <?php endif; ?>
     </div>
 
     <div class="col-md-8">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">Your Clubs</h5>
-            <?php if ($hasOwnClub): ?>
-              <span class="badge text-bg-success">Owner</span>
-            <?php else: ?>
-              <span class="badge text-bg-secondary">Member/Admin</span>
-            <?php endif; ?>
+      
+      <?php if (!empty($adminClubs)): ?>
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Clubs You Manage</h5>
           </div>
-
-          <?php if (!$clubs): ?>
-            <div class="alert alert-info mb-0">
-              You’re not linked to any clubs yet. Click <strong>Create Club</strong> to get started.
-            </div>
-          <?php else: ?>
-            <div class="list-group">
-              <?php foreach ($clubs as $club): ?>
-                <?php
-                  // Defensive slug handling: avoid urlencode(NULL)
-                  $slug = $club['slug'] ?? '';
-                  $clubUrl = ($slug !== '') ? ('/club.php?slug=' . urlencode((string)$slug)) : '#';
-                ?>
-                <a class="list-group-item list-group-item-action" href="<?= e($clubUrl) ?>">
-                  <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1"><?= e($club['name'] ?? '') ?></h6>
-                    <small class="text-muted"><?= e($club['admin_role'] ?? '') ?></small>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <?php foreach ($adminClubs as $club): ?>
+                <?php $slug = $club['slug'] ?? ''; ?>
+                <div class="list-group-item px-0">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        <a href="/public/club.php?slug=<?= e($slug) ?>" class="text-decoration-none">
+                          <?= e($club['name'] ?? '') ?>
+                        </a>
+                        <?php if ($club['admin_role'] === 'owner'): ?>
+                          <span class="badge bg-warning text-dark">Owner</span>
+                        <?php else: ?>
+                          <span class="badge bg-secondary">Admin</span>
+                        <?php endif; ?>
+                      </h6>
+                      <div class="small text-muted">
+                        <?= (int)$club['member_count'] ?> member<?= $club['member_count'] != 1 ? 's' : '' ?>
+                        <?php if (!empty($club['contact_email'])): ?>
+                          &bull; <?= e($club['contact_email']) ?>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="text-end">
+                      <?php if ((int)$club['pending_count'] > 0): ?>
+                        <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-warning btn-sm">
+                          <?= $club['pending_count'] ?> Pending
+                        </a>
+                      <?php else: ?>
+                        <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-secondary btn-sm">
+                          Manage
+                        </a>
+                      <?php endif; ?>
+                    </div>
                   </div>
-                  <div class="small text-muted">
-                    <?= e($club['contact_email'] ?? 'No contact email') ?>
-                    <?php if (!empty($club['location_text'])): ?>
-                      • <?= e($club['location_text']) ?>
-                    <?php endif; ?>
-                  </div>
-                </a>
+                </div>
               <?php endforeach; ?>
             </div>
-          <?php endif; ?>
-
+          </div>
         </div>
-      </div>
-    </div>
+      <?php endif; ?>
 
+      <?php if (!empty($memberClubs)): ?>
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Your Memberships</h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <?php foreach ($memberClubs as $club): ?>
+                <?php $slug = $club['slug'] ?? ''; ?>
+                <div class="list-group-item px-0">
+                  <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">
+                        <a href="/public/club.php?slug=<?= e($slug) ?>" class="text-decoration-none">
+                          <?= e($club['name'] ?? '') ?>
+                        </a>
+                        <?php if ($club['membership_status'] === 'active'): ?>
+                          <span class="badge bg-success">Member</span>
+                        <?php elseif ($club['membership_status'] === 'pending'): ?>
+                          <span class="badge bg-info">Pending</span>
+                        <?php elseif ($club['membership_status'] === 'suspended'): ?>
+                          <span class="badge bg-danger">Suspended</span>
+                        <?php endif; ?>
+                      </h6>
+                      <div class="small text-muted">
+                        <?php if ($club['town']): ?>
+                          <?= e($club['town']) ?>
+                        <?php endif; ?>
+                        <?php if ($club['membership_status'] === 'active'): ?>
+                          &bull; Joined <?= date('M j, Y', strtotime($club['joined_at'])) ?>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div>
+                      <a href="/public/club.php?slug=<?= e($slug) ?>" class="btn btn-outline-primary btn-sm">View</a>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (empty($adminClubs) && empty($memberClubs)): ?>
+        <div class="card shadow-sm">
+          <div class="card-body text-center py-5">
+            <h5 class="text-muted mb-3">Welcome to Angling Club Manager!</h5>
+            <p class="text-muted">You're not linked to any clubs yet.</p>
+            <a href="/public/create_club.php" class="btn btn-primary">Create Your Club</a>
+            <p class="text-muted mt-3 small">Or browse public clubs and request to join one.</p>
+            <a href="/" class="btn btn-outline-secondary btn-sm">Browse Clubs</a>
+          </div>
+        </div>
+      <?php endif; ?>
+
+    </div>
   </div>
 </div>
 
