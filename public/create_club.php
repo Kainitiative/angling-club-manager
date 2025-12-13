@@ -8,15 +8,8 @@ $userId = current_user_id();
 $errors = [];
 $success = false;
 
-function post($key, $default = '') {
-  return $_POST[$key] ?? $default;
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $name = trim(post('name'));
-  $contact_email = trim(post('contact_email'));
-  $location_text = trim(post('location_text'));
-  $about_text = trim(post('about_text'));
+  $name = trim($_POST['name'] ?? '');
 
   if ($name === '') {
     $errors[] = "Club name is required.";
@@ -26,10 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       $pdo->beginTransaction();
 
+      // Generate unique slug
       $slug = generate_slug($name);
       $baseSlug = $slug;
       $counter = 1;
-      
       $checkStmt = $pdo->prepare("SELECT id FROM clubs WHERE slug = ?");
       $checkStmt->execute([$slug]);
       while ($checkStmt->fetch()) {
@@ -37,29 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $checkStmt->execute([$slug]);
       }
 
+      // Required date fields (placeholder values)
       $today = date('Y-m-d');
-      $trialEnd = date('Y-m-d', strtotime('+30 days'));
+      $future = date('Y-m-d', strtotime('+30 days'));
 
       $stmt = $pdo->prepare("
-        INSERT INTO clubs (name, slug, contact_email, location_text, about_text, trial_start_date, trial_end_date, access_until, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        INSERT INTO clubs (name, slug, trial_start_date, trial_end_date, access_until)
+        VALUES (?, ?, ?, ?, ?)
       ");
-      $stmt->execute([
-        $name,
-        $slug,
-        $contact_email !== '' ? $contact_email : null,
-        $location_text !== '' ? $location_text : null,
-        $about_text !== '' ? $about_text : null,
-        $today,
-        $trialEnd,
-        $trialEnd
-      ]);
+      $stmt->execute([$name, $slug, $today, $future, $future]);
 
       $clubId = $pdo->lastInsertId();
 
       $stmt = $pdo->prepare("
-        INSERT INTO club_admins (club_id, user_id, admin_role, created_at)
-        VALUES (?, ?, 'owner', NOW())
+        INSERT INTO club_admins (club_id, user_id, admin_role)
+        VALUES (?, ?, 'owner')
       ");
       $stmt->execute([$clubId, $userId]);
 
@@ -68,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } catch (Throwable $ex) {
       if ($pdo->inTransaction()) $pdo->rollBack();
-      $errors[] = "Failed to create club: " . $ex->getMessage();
+      $errors[] = "Failed to create club.";
     }
   }
 }
@@ -77,70 +62,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Create Club - Angling Club Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Create Club</title>
 </head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/public/dashboard.php">Angling Club Manager</a>
-    <div class="ms-auto">
-      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
-    </div>
-  </div>
-</nav>
-
-<div class="container py-4" style="max-width: 600px;">
-  <h1 class="mb-4">Create New Club</h1>
+<body>
+  <h1>Create Club</h1>
 
   <?php if ($success): ?>
-    <div class="alert alert-success">
-      <strong>Club created successfully!</strong>
-      <a href="/public/dashboard.php" class="alert-link">Go to Dashboard</a>
-    </div>
+    <p style="color:green;"><strong>Club created!</strong> <a href="/public/dashboard.php">Go to Dashboard</a></p>
   <?php endif; ?>
 
   <?php if ($errors): ?>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <?php foreach ($errors as $err): ?>
-          <li><?= e($err) ?></li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
+    <ul style="color:red;">
+      <?php foreach ($errors as $err): ?>
+        <li><?= e($err) ?></li>
+      <?php endforeach; ?>
+    </ul>
   <?php endif; ?>
 
   <?php if (!$success): ?>
-  <form method="post" class="card card-body">
-    <div class="mb-3">
-      <label class="form-label">Club Name *</label>
-      <input type="text" name="name" class="form-control" value="<?= e(post('name')) ?>" required>
+  <form method="post">
+    <div>
+      <label>Club Name *</label><br>
+      <input type="text" name="name" required>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">Contact Email</label>
-      <input type="email" name="contact_email" class="form-control" value="<?= e(post('contact_email')) ?>">
+    <div style="margin-top:10px;">
+      <button type="submit">Create</button>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">Location</label>
-      <input type="text" name="location_text" class="form-control" value="<?= e(post('location_text')) ?>">
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">About</label>
-      <textarea name="about_text" class="form-control" rows="3"><?= e(post('about_text')) ?></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Create Club</button>
   </form>
   <?php endif; ?>
 
-  <p class="mt-3">
-    <a href="/public/dashboard.php">&larr; Back to Dashboard</a>
-  </p>
-</div>
+  <p><a href="/public/dashboard.php">Back to Dashboard</a></p>
 </body>
 </html>
