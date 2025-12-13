@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/public/dashboard.php">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Club Manager</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
       <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>

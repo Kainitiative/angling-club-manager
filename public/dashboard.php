@@ -61,7 +61,7 @@ $locationStr = $location ? implode(', ', $location) : 'Not set';
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container">
-    <a class="navbar-brand" href="/dashboard.php">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Club Manager</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm" href="/public/profile.php">Profile</a>
       <a class="btn btn-light btn-sm ms-2" href="/public/auth/logout.php">Logout</a>
