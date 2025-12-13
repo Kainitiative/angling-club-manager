@@ -7,7 +7,7 @@ require_login();
 
 $userId = current_user_id();
 
-$stmt = $pdo->prepare("SELECT id, name, email, city FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, name, email, profile_picture_url, dob, phone, town, city, country, gender FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch();
 
@@ -20,6 +20,16 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$userId]);
 $clubs = $stmt->fetchAll();
+
+$defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($user['name']) . '&size=80&background=0D6EFD&color=fff';
+$avatarUrl = $user['profile_picture_url'] ?: $defaultAvatar;
+
+$location = array_filter([
+  $user['town'] ?? null,
+  $user['city'] ?? null,
+  $user['country'] ?? null
+]);
+$locationStr = $location ? implode(', ', $location) : 'Not set';
 ?>
 <!doctype html>
 <html>
@@ -27,6 +37,15 @@ $clubs = $stmt->fetchAll();
   <meta charset="utf-8">
   <title>Dashboard - Angling Club Manager</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #dee2e6;
+    }
+  </style>
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -40,17 +59,42 @@ $clubs = $stmt->fetchAll();
 </nav>
 
 <div class="container py-4">
-  <h1 class="mb-2">Dashboard</h1>
-  <p class="text-muted mb-4">Logged in as <?= e($user['name'] ?? '') ?></p>
+  <h1 class="mb-4">Dashboard</h1>
 
-  <div class="row">
-    <div class="col-md-6 mb-4">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">Your Profile</h5>
-          <p class="mb-1"><strong>Name:</strong> <?= e($user['name'] ?? '') ?></p>
-          <p class="mb-1"><strong>Email:</strong> <?= e($user['email'] ?? '') ?></p>
-          <p class="mb-0"><strong>City/County:</strong> <?= e($user['city'] ?? 'Not set') ?></p>
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-start">
+        <img src="<?= e($avatarUrl) ?>" alt="Profile" class="profile-avatar me-4">
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h4 class="mb-1"><?= e($user['name']) ?></h4>
+              <p class="text-muted mb-2"><?= e($user['email']) ?></p>
+            </div>
+            <a href="/public/profile.php" class="btn btn-outline-primary btn-sm">Edit Profile</a>
+          </div>
+          
+          <div class="row mt-3">
+            <div class="col-md-4 mb-2">
+              <small class="text-muted d-block">Location</small>
+              <span><?= e($locationStr) ?></span>
+            </div>
+            <div class="col-md-4 mb-2">
+              <small class="text-muted d-block">Phone</small>
+              <span><?= e($user['phone'] ?? 'Not set') ?></span>
+            </div>
+            <div class="col-md-4 mb-2">
+              <small class="text-muted d-block">Date of Birth</small>
+              <span><?= $user['dob'] ? date('d M Y', strtotime($user['dob'])) : 'Not set' ?></span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-2">
+              <small class="text-muted d-block">Gender</small>
+              <span><?= e(ucfirst(str_replace('_', ' ', $user['gender'] ?? '')) ?: 'Not set') ?></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
