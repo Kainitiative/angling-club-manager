@@ -9,6 +9,15 @@ $errors = [];
 $success = false;
 $newClubId = null;
 
+$stmt = $pdo->prepare("SELECT c.id, c.name, c.slug FROM clubs c JOIN club_admins ca ON c.id = ca.club_id WHERE ca.user_id = ? AND ca.admin_role = 'owner'");
+$stmt->execute([$userId]);
+$existingClub = $stmt->fetch();
+
+if ($existingClub) {
+  header('Location: /public/dashboard.php');
+  exit;
+}
+
 $fishingStyleOptions = [
   'coarse' => 'Coarse Fishing',
   'carp' => 'Carp Fishing',
@@ -120,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ]);
 
       $newClubId = $pdo->lastInsertId();
+      $newClubSlug = $slug;
 
       $stmt = $pdo->prepare("
         INSERT INTO club_admins (club_id, user_id, admin_role)
@@ -183,7 +193,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="display-1 mb-3">🎉</div>
             <h2 class="mb-3">Club Created Successfully!</h2>
             <p class="text-muted mb-4">Your club "<strong><?= e($formData['name']) ?></strong>" is now ready. You are the club owner and administrator.</p>
-            <a href="/public/dashboard.php" class="btn btn-primary btn-lg">Go to Dashboard</a>
+            
+            <div class="mb-4">
+              <label class="form-label text-muted">Share your club's public page:</label>
+              <div class="input-group mx-auto" style="max-width: 500px;">
+                <input type="text" class="form-control text-center" 
+                       value="<?= e((isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/public/club.php?slug=' . $newClubSlug) ?>" 
+                       readonly onclick="this.select()" id="clubUrl">
+                <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('clubUrl').value); this.textContent='Copied!';">Copy</button>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3">
+              <a href="/public/club.php?slug=<?= e($newClubSlug) ?>" class="btn btn-outline-primary btn-lg">View Club Page</a>
+              <a href="/public/dashboard.php" class="btn btn-primary btn-lg">Go to Dashboard</a>
+            </div>
           </div>
         </div>
       <?php else: ?>

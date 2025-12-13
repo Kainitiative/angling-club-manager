@@ -12,7 +12,7 @@ $stmt->execute([$userId]);
 $user = $stmt->fetch();
 
 $stmt = $pdo->prepare("
-  SELECT c.id, c.name, c.contact_email, c.location_text, ca.admin_role
+  SELECT c.id, c.name, c.slug, c.contact_email, c.location_text, ca.admin_role
   FROM clubs c
   JOIN club_admins ca ON c.id = ca.club_id
   WHERE ca.user_id = ?
@@ -20,6 +20,14 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$userId]);
 $clubs = $stmt->fetchAll();
+
+$hasOwnClub = false;
+foreach ($clubs as $club) {
+  if ($club['admin_role'] === 'owner') {
+    $hasOwnClub = true;
+    break;
+  }
+}
 
 $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($user['name']) . '&size=80&background=0D6EFD&color=fff';
 $avatarUrl = $user['profile_picture_url'] ?: $defaultAvatar;
@@ -101,13 +109,15 @@ $locationStr = $location ? implode(', ', $location) : 'Not set';
   </div>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Your Clubs</h2>
-    <a href="/public/create_club.php" class="btn btn-primary">+ Create Club</a>
+    <h2 class="mb-0">Your Club</h2>
+    <?php if (!$hasOwnClub): ?>
+      <a href="/public/create_club.php" class="btn btn-primary">+ Create Club</a>
+    <?php endif; ?>
   </div>
 
   <?php if (empty($clubs)): ?>
     <div class="alert alert-info">
-      You haven't created any clubs yet. <a href="/public/create_club.php" class="alert-link">Create one now</a>!
+      You haven't created a club yet. <a href="/public/create_club.php" class="alert-link">Create one now</a>!
     </div>
   <?php else: ?>
     <div class="row">
@@ -115,14 +125,19 @@ $locationStr = $location ? implode(', ', $location) : 'Not set';
         <div class="col-md-6 mb-3">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title"><?= e($club['name']) ?></h5>
-              <p class="mb-1"><span class="badge bg-secondary"><?= e($club['admin_role']) ?></span></p>
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title mb-0"><?= e($club['name']) ?></h5>
+                <span class="badge bg-<?= $club['admin_role'] === 'owner' ? 'primary' : 'secondary' ?>"><?= e($club['admin_role']) ?></span>
+              </div>
               <?php if ($club['location_text']): ?>
-                <p class="mb-1 text-muted"><small><?= e($club['location_text']) ?></small></p>
+                <p class="mb-2 text-muted"><small>📍 <?= e($club['location_text']) ?></small></p>
               <?php endif; ?>
               <?php if ($club['contact_email']): ?>
-                <p class="mb-0 text-muted"><small><?= e($club['contact_email']) ?></small></p>
+                <p class="mb-2 text-muted"><small>✉️ <?= e($club['contact_email']) ?></small></p>
               <?php endif; ?>
+              <div class="mt-3">
+                <a href="/public/club.php?slug=<?= e($club['slug']) ?>" class="btn btn-outline-primary btn-sm">View Public Page</a>
+              </div>
             </div>
           </div>
         </div>
