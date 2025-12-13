@@ -29,9 +29,16 @@ The application supports both MySQL and PostgreSQL:
 - **Replit**: PostgreSQL (via built-in database)
 
 Tables:
-- `users` - User accounts
+- `users` - User accounts (everyone who signs up)
 - `clubs` - Club information
-- `club_admins` - Club administrator relationships (tracks admin_role: owner/admin)
+- `club_admins` - Club administrator relationships (admin_role: owner/admin)
+- `club_members` - Club membership (users who join clubs, membership_status: pending/active/suspended/expired)
+
+User Roles:
+- **User** - Anyone who signs up on the site
+- **Club Member** - A user who joins a club (stored in club_members)
+- **Club Admin** - A user with admin privileges for a club (stored in club_admins with admin_role='admin')
+- **Club Owner** - The user who created the club (stored in club_admins with admin_role='owner')
 
 ## Features Implemented
 - User authentication with helpers: `current_user_id()`, `current_user()`, `require_login()`
