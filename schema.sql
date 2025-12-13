@@ -1,5 +1,5 @@
 -- Angling Club Manager MVP
--- Schema version: 0.2
+-- Schema version: 0.3
 -- Database: angling_club_manager
 -- MySQL/MariaDB
 
@@ -38,8 +38,22 @@ CREATE TABLE clubs (
   contact_email VARCHAR(190) NULL,
   logo_url VARCHAR(500) NULL,
   about_text TEXT NULL,
+  
+  -- Address fields
+  address_line1 VARCHAR(255) NULL,
+  address_line2 VARCHAR(255) NULL,
+  town VARCHAR(120) NULL,
+  county VARCHAR(120) NULL,
+  postcode VARCHAR(20) NULL,
+  country VARCHAR(120) NULL DEFAULT 'United Kingdom',
+  
+  -- Legacy location fields
   location_text VARCHAR(255) NULL,
   city VARCHAR(120) NULL,
+  
+  -- Fishing styles (stored as JSON array)
+  fishing_styles TEXT NULL,
+  
   is_public TINYINT(1) NOT NULL DEFAULT 1,
   trial_start_date DATE NOT NULL,
   trial_end_date DATE NOT NULL,
