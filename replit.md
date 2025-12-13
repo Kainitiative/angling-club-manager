@@ -5,14 +5,16 @@ A PHP-based web application for managing angling clubs. Includes user accounts, 
 
 ## Project Structure
 - `index.php` - Main entry point
-- `app/bootstrap.php` - Application bootstrap (session, database connection)
-- `config.local.php` - Database configuration (uses environment variables)
-- `schema.sql` - PostgreSQL database schema
+- `app/bootstrap.php` - Application bootstrap (session, database connection, helper functions)
+- `config.local.php` - Database configuration (uses environment variables or localhost defaults)
+- `dashboard.php` - User dashboard showing clubs and club creation link
+- `create-club.php` - Club creation form
+- `schema.sql` - Database schema
 - `db_test.php` - Database connection test script
 
 ## Technical Stack
 - **Language**: PHP 8.4
-- **Database**: PostgreSQL (via Replit's built-in database)
+- **Database**: MySQL/MariaDB (primary), with PostgreSQL support for Replit
 - **Server**: PHP built-in development server
 
 ## Running the Application
@@ -22,15 +24,33 @@ php -S 0.0.0.0:5000 -t .
 ```
 
 ## Database
-Uses PostgreSQL with the following tables:
-- `users` - Site user accounts
-- `clubs` - Club information and billing
-- `club_admins` - Club administrator relationships
+The application supports both MySQL and PostgreSQL:
+- **Local development**: MySQL/MariaDB on localhost (via Laragon)
+- **Replit**: PostgreSQL (via built-in database)
 
-Database connection uses these environment variables:
-- `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`
+Tables:
+- `users` - User accounts
+- `clubs` - Club information
+- `club_admins` - Club administrator relationships (tracks admin_role: owner/admin)
 
-## Recent Changes
-- Migrated from MySQL to PostgreSQL for Replit compatibility
-- Created config.local.php using Replit's database environment variables
-- Updated schema.sql for PostgreSQL syntax
+## Features Implemented
+- User authentication with helpers: `current_user_id()`, `current_user()`, `require_login()`
+- Dashboard page showing user's clubs and "Create Club" link
+- Create Club form with fields: name, contact_email, location_text, about_text
+- Automatic club admin relationship creation with 'owner' role
+
+## Configuration
+For local Laragon development, update `config.local.php`:
+```php
+$host = 'localhost';
+$dbname = 'angling_club_manager';
+$user = 'root';
+$pass = '';
+```
+
+For Replit (PostgreSQL), use environment variables: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+
+## Important Notes
+- config.local.php is .gitignored (contains sensitive credentials)
+- Code supports both MySQL and PostgreSQL drivers
+- Trial logic, billing, and subscriptions are NOT implemented (future scope)

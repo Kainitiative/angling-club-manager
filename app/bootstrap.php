@@ -24,7 +24,12 @@ if (!isset($config['db'])) {
 
 $db = $config['db'];
 
-$dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";
+$driver = $db['driver'] ?? 'mysql';
+if ($driver === 'pgsql') {
+  $dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";
+} else {
+  $dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+}
 
 try {
   $pdo = new PDO($dsn, $db['user'], $db['pass'], [
@@ -34,4 +39,26 @@ try {
 } catch (Throwable $e) {
   http_response_code(500);
   exit("DB connection failed: " . htmlspecialchars($e->getMessage()));
+}
+
+// Helper functions
+function current_user_id() {
+  return $_SESSION['user_id'] ?? null;
+}
+
+function require_login() {
+  if (!current_user_id()) {
+    http_response_code(403);
+    exit("Login required");
+  }
+}
+
+function current_user() {
+  global $pdo;
+  $userId = current_user_id();
+  if (!$userId) return null;
+  
+  $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+  $stmt->execute([$userId]);
+  return $stmt->fetch();
 }
