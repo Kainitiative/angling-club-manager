@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../app/bootstrap.php';
 require_login();
 
 $userId = current_user_id();
 $errors = [];
-$createdClubId = null;
+$success = false;
 
 function post($key, $default = '') {
   return $_POST[$key] ?? $default;
@@ -12,45 +14,61 @@ function post($key, $default = '') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $name = trim(post('name'));
-  $county = trim(post('county'));
-  $city = trim(post('city'));
+  $contact_email = trim(post('contact_email'));
+  $location_text = trim(post('location_text'));
+  $about_text = trim(post('about_text'));
 
-  if ($name === '') $errors[] = "Club name is required.";
+  if ($name === '') {
+    $errors[] = "Club name is required.";
+  }
 
   if (!$errors) {
     try {
       $pdo->beginTransaction();
 
-      $clubId = uuidv4();
+      $slug = generate_slug($name);
+      $baseSlug = $slug;
+      $counter = 1;
+      
+      $checkStmt = $pdo->prepare("SELECT id FROM clubs WHERE slug = ?");
+      $checkStmt->execute([$slug]);
+      while ($checkStmt->fetch()) {
+        $slug = $baseSlug . '-' . $counter++;
+        $checkStmt->execute([$slug]);
+      }
+
+      $today = date('Y-m-d');
+      $trialEnd = date('Y-m-d', strtotime('+30 days'));
+
       $stmt = $pdo->prepare("
-        INSERT INTO clubs (id, name, county, city, created_at)
-        VALUES (:id, :name, :county, :city, NOW())
+        INSERT INTO clubs (name, slug, contact_email, location_text, about_text, trial_start_date, trial_end_date, access_until, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
       ");
       $stmt->execute([
-        ':id' => $clubId,
-        ':name' => $name,
-        ':county' => $county !== '' ? $county : null,
-        ':city' => $city !== '' ? $city : null,
+        $name,
+        $slug,
+        $contact_email !== '' ? $contact_email : null,
+        $location_text !== '' ? $location_text : null,
+        $about_text !== '' ? $about_text : null,
+        $today,
+        $trialEnd,
+        $trialEnd
       ]);
 
-      $adminId = uuidv4();
+      $clubId = $pdo->lastInsertId();
+
       $stmt = $pdo->prepare("
-        INSERT INTO club_admins (id, club_id, user_id, role, created_at)
-        VALUES (:id, :club_id, :user_id, :role, NOW())
+        INSERT INTO club_admins (club_id, user_id, admin_role, created_at)
+        VALUES (?, ?, 'owner', NOW())
       ");
-      $stmt->execute([
-        ':id' => $adminId,
-        ':club_id' => $clubId,
-        ':user_id' => $userId,
-        ':role' => 'owner',
-      ]);
+      $stmt->execute([$clubId, $userId]);
 
       $pdo->commit();
-      $createdClubId = $clubId;
+      $success = true;
 
-    } catch (Throwable $e) {
+    } catch (Throwable $ex) {
       if ($pdo->inTransaction()) $pdo->rollBack();
-      $errors[] = "Failed to create club.";
+      $errors[] = "Failed to create club: " . $ex->getMessage();
     }
   }
 }
@@ -59,21 +77,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Create Club</title>
+  <title>Create Club - Angling Club Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-  <h1>Create Club</h1>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/public/dashboard.php">Angling Club Manager</a>
+    <div class="ms-auto">
+      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
+      <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
+    </div>
+  </div>
+</nav>
 
-  <?php if ($createdClubId): ?>
-    <div style="padding:10px;border:1px solid #2d6;margin:10px 0;">
-      Created! Club ID: <strong><?= e($createdClubId) ?></strong>
+<div class="container py-4" style="max-width: 600px;">
+  <h1 class="mb-4">Create New Club</h1>
+
+  <?php if ($success): ?>
+    <div class="alert alert-success">
+      <strong>Club created successfully!</strong>
+      <a href="/public/dashboard.php" class="alert-link">Go to Dashboard</a>
     </div>
   <?php endif; ?>
 
   <?php if ($errors): ?>
-    <div style="padding:10px;border:1px solid #c33;margin:10px 0;">
-      <ul>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
         <?php foreach ($errors as $err): ?>
           <li><?= e($err) ?></li>
         <?php endforeach; ?>
@@ -81,25 +112,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
   <?php endif; ?>
 
-  <form method="post" action="/create_club.php">
-    <div>
-      <label>Club Name *</label><br>
-      <input type="text" name="name" value="<?= e(post('name')) ?>" required>
+  <?php if (!$success): ?>
+  <form method="post" class="card card-body">
+    <div class="mb-3">
+      <label class="form-label">Club Name *</label>
+      <input type="text" name="name" class="form-control" value="<?= e(post('name')) ?>" required>
     </div>
 
-    <div style="margin-top:10px;">
-      <label>County</label><br>
-      <input type="text" name="county" value="<?= e(post('county')) ?>">
+    <div class="mb-3">
+      <label class="form-label">Contact Email</label>
+      <input type="email" name="contact_email" class="form-control" value="<?= e(post('contact_email')) ?>">
     </div>
 
-    <div style="margin-top:10px;">
-      <label>City / Town</label><br>
-      <input type="text" name="city" value="<?= e(post('city')) ?>">
+    <div class="mb-3">
+      <label class="form-label">Location</label>
+      <input type="text" name="location_text" class="form-control" value="<?= e(post('location_text')) ?>">
     </div>
 
-    <div style="margin-top:15px;">
-      <button type="submit">Create</button>
+    <div class="mb-3">
+      <label class="form-label">About</label>
+      <textarea name="about_text" class="form-control" rows="3"><?= e(post('about_text')) ?></textarea>
     </div>
+
+    <button type="submit" class="btn btn-primary">Create Club</button>
   </form>
+  <?php endif; ?>
+
+  <p class="mt-3">
+    <a href="/public/dashboard.php">&larr; Back to Dashboard</a>
+  </p>
+</div>
 </body>
 </html>

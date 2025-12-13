@@ -41,17 +41,8 @@ try {
   exit("DB connection failed: " . htmlspecialchars($e->getMessage()));
 }
 
-// Helper functions
-function current_user_id() {
-  return $_SESSION['user_id'] ?? null;
-}
-
-function require_login() {
-  if (!current_user_id()) {
-    http_response_code(403);
-    exit("Login required");
-  }
-}
+// Include helpers
+require_once __DIR__ . '/helpers.php';
 
 function current_user() {
   global $pdo;
