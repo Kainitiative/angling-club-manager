@@ -65,11 +65,31 @@ foreach ($adminClubs as $club) {
 
 // Fetch upcoming open competitions in user's country
 $userCountry = $user['country'] ?? '';
+$userTown = $user['town'] ?? '';
 $upcomingCompetitions = [];
 
 if ($userCountry !== '') {
+  // First try to get competitions in the same town/city
+  if ($userTown !== '') {
+    $stmt = $pdo->prepare("
+      SELECT comp.*, c.name as club_name, c.slug as club_slug, 1 as is_local
+      FROM competitions comp
+      JOIN clubs c ON comp.club_id = c.id
+      WHERE comp.visibility = 'open'
+        AND comp.competition_date >= CURDATE()
+        AND comp.country = ?
+        AND comp.town = ?
+      ORDER BY comp.competition_date ASC
+      LIMIT 5
+    ");
+    $stmt->execute([$userCountry, $userTown]);
+    $upcomingCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+  
+  // Then fill with other competitions in the country
+  $existingIds = array_column($upcomingCompetitions, 'id');
   $stmt = $pdo->prepare("
-    SELECT comp.*, c.name as club_name, c.slug as club_slug
+    SELECT comp.*, c.name as club_name, c.slug as club_slug, 0 as is_local
     FROM competitions comp
     JOIN clubs c ON comp.club_id = c.id
     WHERE comp.visibility = 'open'
@@ -79,8 +99,28 @@ if ($userCountry !== '') {
     LIMIT 10
   ");
   $stmt->execute([$userCountry]);
-  $upcomingCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $countryComps = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  
+  foreach ($countryComps as $comp) {
+    if (!in_array($comp['id'], $existingIds) && count($upcomingCompetitions) < 10) {
+      $upcomingCompetitions[] = $comp;
+    }
+  }
 }
+
+// Fetch recently added open competitions (newest first)
+$recentCompetitions = [];
+$stmt = $pdo->prepare("
+  SELECT comp.*, c.name as club_name, c.slug as club_slug
+  FROM competitions comp
+  JOIN clubs c ON comp.club_id = c.id
+  WHERE comp.visibility = 'open'
+    AND comp.competition_date >= CURDATE()
+  ORDER BY comp.created_at DESC
+  LIMIT 5
+");
+$stmt->execute();
+$recentCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Also get private competitions from clubs user is a member of
 $memberClubIds = array_column($memberClubs, 'id');
@@ -262,10 +302,59 @@ if (!empty($allUserClubIds)) {
         </div>
       <?php endif; ?>
 
+      <?php if (!empty($recentCompetitions)): ?>
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recently Added Competitions</h5>
+            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All</a>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <?php foreach ($recentCompetitions as $comp): ?>
+                <div class="list-group-item px-0">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        <?= e($comp['title']) ?>
+                        <span class="badge bg-info">New</span>
+                      </h6>
+                      <div class="small text-muted">
+                        <?= e($comp['venue_name']) ?>
+                        <?php if ($comp['town']): ?>
+                          &bull; <?= e($comp['town']) ?>
+                        <?php endif; ?>
+                        <?php if ($comp['country']): ?>
+                          , <?= e($comp['country']) ?>
+                        <?php endif; ?>
+                      </div>
+                      <div class="small">
+                        <?= date('D, j M Y', strtotime($comp['competition_date'])) ?>
+                        <?php if ($comp['start_time']): ?>
+                          at <?= date('g:i A', strtotime($comp['start_time'])) ?>
+                        <?php endif; ?>
+                      </div>
+                      <div class="small text-muted">
+                        Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
+                      </div>
+                    </div>
+                    <div>
+                      <?php if ($comp['latitude'] && $comp['longitude']): ?>
+                        <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">Map</a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
+
       <?php if (!empty($upcomingCompetitions) || !empty($privateCompetitions)): ?>
         <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Upcoming Competitions</h5>
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Competitions Near You</h5>
+            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All</a>
           </div>
           <div class="card-body">
             <?php if (empty($upcomingCompetitions) && empty($privateCompetitions)): ?>
@@ -278,6 +367,9 @@ if (!empty($allUserClubIds)) {
                       <div>
                         <h6 class="mb-1">
                           <?= e($comp['title']) ?>
+                          <?php if (!empty($comp['is_local'])): ?>
+                            <span class="badge bg-warning text-dark">Local</span>
+                          <?php endif; ?>
                           <span class="badge bg-success">Open</span>
                         </h6>
                         <div class="small text-muted">
@@ -345,6 +437,7 @@ if (!empty($allUserClubIds)) {
         <div class="card shadow-sm mb-4">
           <div class="card-body">
             <p class="text-muted mb-2">Set your location in your <a href="/public/profile.php">profile</a> to see competitions near you.</p>
+            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All Competitions</a>
           </div>
         </div>
       <?php endif; ?>
