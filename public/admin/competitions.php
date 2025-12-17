@@ -292,8 +292,13 @@ foreach ($competitions as $c) {
                     </div>
                   <?php endif; ?>
                 </div>
-                <div>
-                  <form method="post" onsubmit="return confirm('Delete this competition?');">
+                <div class="text-end">
+                  <?php if ($comp['competition_date'] <= $today): ?>
+                    <a href="/public/admin/competition_results.php?competition_id=<?= $comp['id'] ?>" class="btn btn-success btn-sm mb-1">
+                      Results
+                    </a>
+                  <?php endif; ?>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this competition?');">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="competition_id" value="<?= $comp['id'] ?>">
                     <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
