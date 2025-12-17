@@ -39,6 +39,18 @@ $stmt = $pdo->query("
   LIMIT 12
 ");
 $publicClubs = $stmt->fetchAll();
+
+// Fetch upcoming open competitions
+$stmt = $pdo->query("
+  SELECT comp.*, c.name as club_name, c.slug as club_slug
+  FROM competitions comp
+  JOIN clubs c ON comp.club_id = c.id
+  WHERE comp.visibility = 'open'
+    AND comp.competition_date >= CURDATE()
+  ORDER BY comp.competition_date ASC
+  LIMIT 6
+");
+$upcomingCompetitions = $stmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -194,7 +206,63 @@ $publicClubs = $stmt->fetchAll();
   </div>
 </section>
 
-<section id="login-section" class="py-5 bg-light">
+<?php if (!empty($upcomingCompetitions)): ?>
+<section id="competitions-section" class="py-5 bg-light">
+  <div class="container">
+    <h2 class="text-center mb-2">Upcoming Competitions</h2>
+    <p class="text-center text-muted mb-5">Open fishing competitions you can join</p>
+    
+    <div class="row g-4">
+      <?php foreach ($upcomingCompetitions as $comp): ?>
+        <div class="col-md-6 col-lg-4">
+          <div class="card club-card h-100">
+            <div class="card-body">
+              <h5 class="card-title"><?= e($comp['title']) ?></h5>
+              <h6 class="card-subtitle mb-2 text-muted"><?= e($comp['venue_name']) ?></h6>
+              
+              <div class="mb-2">
+                <strong><?= date('l, j F Y', strtotime($comp['competition_date'])) ?></strong>
+                <?php if ($comp['start_time']): ?>
+                  <br><small class="text-muted">Start: <?= date('g:i A', strtotime($comp['start_time'])) ?></small>
+                <?php endif; ?>
+              </div>
+              
+              <div class="small text-muted mb-2">
+                <?php if ($comp['town']): ?>
+                  <?= e($comp['town']) ?>
+                <?php endif; ?>
+                <?php if ($comp['country']): ?>
+                  , <?= e($comp['country']) ?>
+                <?php endif; ?>
+              </div>
+              
+              <div class="small text-muted">
+                Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
+              </div>
+            </div>
+            <div class="card-footer bg-white border-top-0">
+              <?php if ($comp['latitude'] && $comp['longitude']): ?>
+                <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                  View Map
+                </a>
+              <?php endif; ?>
+              <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>" class="btn btn-outline-secondary btn-sm">
+                View Club
+              </a>
+            </div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    
+    <div class="text-center mt-4">
+      <a href="/public/competitions.php" class="btn btn-primary">Browse All Competitions</a>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
+<section id="login-section" class="py-5">
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
