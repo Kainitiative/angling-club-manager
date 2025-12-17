@@ -217,38 +217,31 @@ $upcomingCompetitions = $stmt->fetchAll();
         <div class="col-md-6 col-lg-4">
           <div class="card club-card h-100">
             <div class="card-body">
-              <h5 class="card-title"><?= e($comp['title']) ?></h5>
-              <h6 class="card-subtitle mb-2 text-muted"><?= e($comp['venue_name']) ?></h6>
-              
-              <div class="mb-2">
-                <strong><?= date('l, j F Y', strtotime($comp['competition_date'])) ?></strong>
+              <div class="d-flex align-items-start mb-3">
+                <div class="club-logo-placeholder me-3">
+                  🏆
+                </div>
+                <div>
+                  <h5 class="card-title mb-1"><?= e($comp['title']) ?></h5>
+                  <?php if ($comp['town'] || $comp['country']): ?>
+                    <small class="text-muted">
+                      📍 <?= e($comp['town'] ?: '') ?><?= ($comp['town'] && $comp['country']) ? ', ' : '' ?><?= e($comp['country'] ?: '') ?>
+                    </small>
+                  <?php endif; ?>
+                </div>
+              </div>
+              <p class="card-text small mb-2">
+                <strong>📅 <?= date('D, j M Y', strtotime($comp['competition_date'])) ?></strong>
                 <?php if ($comp['start_time']): ?>
-                  <br><small class="text-muted">Start: <?= date('g:i A', strtotime($comp['start_time'])) ?></small>
+                  at <?= date('g:i A', strtotime($comp['start_time'])) ?>
                 <?php endif; ?>
-              </div>
-              
-              <div class="small text-muted mb-2">
-                <?php if ($comp['town']): ?>
-                  <?= e($comp['town']) ?>
-                <?php endif; ?>
-                <?php if ($comp['country']): ?>
-                  , <?= e($comp['country']) ?>
-                <?php endif; ?>
-              </div>
-              
-              <div class="small text-muted">
+              </p>
+              <p class="card-text text-muted small mb-2">
+                🎣 <?= e($comp['venue_name']) ?>
+              </p>
+              <p class="card-text text-muted small mb-0">
                 Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
-              </div>
-            </div>
-            <div class="card-footer bg-white border-top-0">
-              <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                  View Map
-                </a>
-              <?php endif; ?>
-              <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>" class="btn btn-outline-secondary btn-sm">
-                View Club
-              </a>
+              </p>
             </div>
           </div>
         </div>
