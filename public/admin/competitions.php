@@ -123,10 +123,11 @@ foreach ($competitions as $c) {
   <title>Manage Competitions - <?= e($club['name']) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    #map { height: 300px; border-radius: 8px; margin-bottom: 1rem; }
+    #modalMap { height: 400px; border-radius: 8px; }
     .competition-card { border-left: 4px solid #0d6efd; }
     .competition-card.private { border-left-color: #6c757d; }
     .competition-card.past { opacity: 0.6; }
+    .location-preview { background: #f8f9fa; padding: 10px; border-radius: 6px; }
   </style>
 </head>
 <body class="bg-light">
@@ -167,8 +168,16 @@ foreach ($competitions as $c) {
           <h5 class="mb-0">Add New Competition</h5>
         </div>
         <div class="card-body">
-          <form method="post">
+          <form method="post" id="competitionForm">
             <input type="hidden" name="action" value="create">
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+            <input type="hidden" name="address_line1" id="address_line1">
+            <input type="hidden" name="address_line2" id="address_line2">
+            <input type="hidden" name="town" id="town">
+            <input type="hidden" name="county" id="county">
+            <input type="hidden" name="postcode" id="postcode">
+            <input type="hidden" name="country" id="country" value="United Kingdom">
             
             <div class="mb-3">
               <label class="form-label">Title <span class="text-danger">*</span></label>
@@ -200,38 +209,15 @@ foreach ($competitions as $c) {
             <h6>Location</h6>
             
             <div class="mb-3">
-              <label class="form-label">Drop a pin on the map</label>
-              <div id="map"></div>
-              <input type="hidden" name="latitude" id="latitude">
-              <input type="hidden" name="longitude" id="longitude">
-              <small class="text-muted" id="coords-display">No location selected</small>
+              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#mapModal">
+                Select Location on Map
+              </button>
             </div>
             
-            <div class="mb-3">
-              <label class="form-label">Address Line 1</label>
-              <input type="text" name="address_line1" class="form-control" id="address_line1">
-            </div>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Town</label>
-                <input type="text" name="town" class="form-control" id="town">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">County</label>
-                <input type="text" name="county" class="form-control" id="county">
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Postcode</label>
-                <input type="text" name="postcode" class="form-control" id="postcode">
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Country <span class="text-danger">*</span></label>
-                <input type="text" name="country" class="form-control" id="country" value="United Kingdom" required>
-              </div>
+            <div id="locationPreview" class="location-preview mb-3" style="display: none;">
+              <strong>Selected Location:</strong>
+              <div id="previewAddress" class="small text-muted mt-1"></div>
+              <div id="previewCoords" class="small text-muted"></div>
             </div>
             
             <hr>
@@ -322,14 +308,49 @@ foreach ($competitions as $c) {
   </div>
 </div>
 
+<div class="modal fade" id="mapModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Select Competition Location</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">Click on the map to drop a pin at the competition location. You can drag the pin to adjust.</p>
+        <div id="modalMap"></div>
+        <div class="mt-3">
+          <div id="modalAddressPreview" class="alert alert-info" style="display: none;">
+            <strong>Address:</strong> <span id="modalAddressText"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmLocationBtn" disabled>Confirm Location</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let map, marker;
+let selectedLocation = null;
+let selectedAddress = {};
+
+const mapModal = document.getElementById('mapModal');
+mapModal.addEventListener('shown.bs.modal', function() {
+  if (!map) {
+    initMap();
+  } else {
+    google.maps.event.trigger(map, 'resize');
+  }
+});
 
 function initMap() {
-  const defaultPos = { lat: 53.5, lng: -7.5 };
+  const defaultPos = { lat: 53.5, lng: -1.5 };
   
-  map = new google.maps.Map(document.getElementById('map'), {
+  map = new google.maps.Map(document.getElementById('modalMap'), {
     center: defaultPos,
     zoom: 6,
   });
@@ -350,18 +371,20 @@ function placeMarker(location) {
     });
     
     marker.addListener('dragend', function() {
-      updateCoords(marker.getPosition());
+      updateLocation(marker.getPosition());
     });
   }
-  updateCoords(location);
-  reverseGeocode(location);
+  updateLocation(location);
 }
 
-function updateCoords(location) {
-  document.getElementById('latitude').value = location.lat();
-  document.getElementById('longitude').value = location.lng();
-  document.getElementById('coords-display').textContent = 
-    'Lat: ' + location.lat().toFixed(6) + ', Lng: ' + location.lng().toFixed(6);
+function updateLocation(location) {
+  selectedLocation = {
+    lat: location.lat(),
+    lng: location.lng()
+  };
+  
+  document.getElementById('confirmLocationBtn').disabled = false;
+  reverseGeocode(location);
 }
 
 function reverseGeocode(location) {
@@ -369,34 +392,64 @@ function reverseGeocode(location) {
   geocoder.geocode({ location: location }, function(results, status) {
     if (status === 'OK' && results[0]) {
       const components = results[0].address_components;
-      let address = '', town = '', county = '', postcode = '', country = '';
+      selectedAddress = {
+        address_line1: '',
+        town: '',
+        county: '',
+        postcode: '',
+        country: ''
+      };
       
       for (const c of components) {
         if (c.types.includes('street_number') || c.types.includes('route')) {
-          address += (address ? ' ' : '') + c.long_name;
+          selectedAddress.address_line1 += (selectedAddress.address_line1 ? ' ' : '') + c.long_name;
         }
         if (c.types.includes('locality') || c.types.includes('postal_town')) {
-          town = c.long_name;
+          selectedAddress.town = c.long_name;
         }
         if (c.types.includes('administrative_area_level_2') || c.types.includes('administrative_area_level_1')) {
-          county = c.long_name;
+          selectedAddress.county = c.long_name;
         }
         if (c.types.includes('postal_code')) {
-          postcode = c.long_name;
+          selectedAddress.postcode = c.long_name;
         }
         if (c.types.includes('country')) {
-          country = c.long_name;
+          selectedAddress.country = c.long_name;
         }
       }
       
-      if (address) document.getElementById('address_line1').value = address;
-      if (town) document.getElementById('town').value = town;
-      if (county) document.getElementById('county').value = county;
-      if (postcode) document.getElementById('postcode').value = postcode;
-      if (country) document.getElementById('country').value = country;
+      const addressText = results[0].formatted_address;
+      document.getElementById('modalAddressText').textContent = addressText;
+      document.getElementById('modalAddressPreview').style.display = 'block';
     }
   });
 }
+
+document.getElementById('confirmLocationBtn').addEventListener('click', function() {
+  if (!selectedLocation) return;
+  
+  document.getElementById('latitude').value = selectedLocation.lat;
+  document.getElementById('longitude').value = selectedLocation.lng;
+  document.getElementById('address_line1').value = selectedAddress.address_line1 || '';
+  document.getElementById('town').value = selectedAddress.town || '';
+  document.getElementById('county').value = selectedAddress.county || '';
+  document.getElementById('postcode').value = selectedAddress.postcode || '';
+  document.getElementById('country').value = selectedAddress.country || 'United Kingdom';
+  
+  const previewParts = [];
+  if (selectedAddress.address_line1) previewParts.push(selectedAddress.address_line1);
+  if (selectedAddress.town) previewParts.push(selectedAddress.town);
+  if (selectedAddress.county) previewParts.push(selectedAddress.county);
+  if (selectedAddress.postcode) previewParts.push(selectedAddress.postcode);
+  if (selectedAddress.country) previewParts.push(selectedAddress.country);
+  
+  document.getElementById('previewAddress').textContent = previewParts.join(', ') || 'Location selected';
+  document.getElementById('previewCoords').textContent = 
+    'Coordinates: ' + selectedLocation.lat.toFixed(6) + ', ' + selectedLocation.lng.toFixed(6);
+  document.getElementById('locationPreview').style.display = 'block';
+  
+  bootstrap.Modal.getInstance(document.getElementById('mapModal')).hide();
+});
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
 </body>
