@@ -24,6 +24,11 @@ if (!isset($config['db'])) {
 
 $db = $config['db'];
 
+// Define BASE_URL for redirects (set in config.local.php for Laragon)
+if (isset($config['base_url'])) {
+  define('BASE_URL', $config['base_url']);
+}
+
 $driver = $db['driver'] ?? 'mysql';
 if ($driver === 'pgsql') {
   $dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";

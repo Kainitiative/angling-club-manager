@@ -2,6 +2,10 @@
 declare(strict_types=1);
 
 function redirect(string $path): void {
+  // For local dev (Laragon), convert absolute paths to relative from project root
+  if (defined('BASE_URL') && strpos($path, '/') === 0) {
+    $path = rtrim(BASE_URL, '/') . $path;
+  }
   header("Location: $path");
   exit;
 }
