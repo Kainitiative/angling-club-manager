@@ -109,6 +109,27 @@ $address = array_filter([
   $club['postcode'] ?? null,
   $club['country'] ?? null,
 ]);
+
+// Fetch upcoming competitions for this club
+// Open competitions are visible to everyone; private only to members/admins
+$canSeePrivate = $isAdmin || $isMember;
+if ($canSeePrivate) {
+  $stmt = $pdo->prepare("
+    SELECT * FROM competitions 
+    WHERE club_id = ? AND competition_date >= CURDATE()
+    ORDER BY competition_date ASC
+    LIMIT 10
+  ");
+} else {
+  $stmt = $pdo->prepare("
+    SELECT * FROM competitions 
+    WHERE club_id = ? AND competition_date >= CURDATE() AND visibility = 'open'
+    ORDER BY competition_date ASC
+    LIMIT 10
+  ");
+}
+$stmt->execute([$club['id']]);
+$clubCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">
@@ -245,6 +266,64 @@ $address = array_filter([
                 <?= e($fishingStyleLabels[$style] ?? ucfirst($style)) ?>
               </span>
             <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($clubCompetitions)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Upcoming Competitions</h5>
+            <?php if ($isAdmin): ?>
+              <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm">Manage</a>
+            <?php endif; ?>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <?php foreach ($clubCompetitions as $comp): ?>
+                <div class="list-group-item px-0">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        <?= e($comp['title']) ?>
+                        <?php if ($comp['visibility'] === 'private'): ?>
+                          <span class="badge bg-secondary">Members Only</span>
+                        <?php endif; ?>
+                      </h6>
+                      <div class="small text-muted">
+                        <?= e($comp['venue_name']) ?>
+                        <?php if ($comp['town']): ?>
+                          &bull; <?= e($comp['town']) ?>
+                        <?php endif; ?>
+                      </div>
+                      <div class="small">
+                        <strong><?= date('l, j F Y', strtotime($comp['competition_date'])) ?></strong>
+                        <?php if ($comp['start_time']): ?>
+                          at <?= date('g:i A', strtotime($comp['start_time'])) ?>
+                        <?php endif; ?>
+                      </div>
+                      <?php if ($comp['description']): ?>
+                        <div class="small text-muted mt-1"><?= e($comp['description']) ?></div>
+                      <?php endif; ?>
+                    </div>
+                    <div>
+                      <?php if ($comp['latitude'] && $comp['longitude']): ?>
+                        <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
+                          View Map
+                        </a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      <?php elseif ($isAdmin): ?>
+        <div class="card mb-4">
+          <div class="card-body text-center py-4">
+            <p class="text-muted mb-2">No upcoming competitions</p>
+            <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-primary btn-sm">Add Competition</a>
           </div>
         </div>
       <?php endif; ?>
