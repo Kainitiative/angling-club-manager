@@ -19,7 +19,7 @@ if (!$user) {
 }
 
 $stmt = $pdo->prepare("
-  SELECT c.id, c.name, c.slug, c.contact_email, c.location_text, ca.admin_role,
+  SELECT c.id, c.name, c.slug, c.contact_email, c.location_text, c.logo_url, ca.admin_role,
          (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id AND cm.membership_status = 'pending') as pending_count,
          (SELECT COUNT(*) FROM club_members cm WHERE cm.club_id = c.id AND cm.membership_status = 'active') as member_count
   FROM clubs c
@@ -31,7 +31,7 @@ $stmt->execute([$userId]);
 $adminClubs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $stmt = $pdo->prepare("
-  SELECT c.id, c.name, c.slug, c.contact_email, c.town, cm.membership_status, cm.joined_at
+  SELECT c.id, c.name, c.slug, c.contact_email, c.town, c.logo_url, cm.membership_status, cm.joined_at
   FROM clubs c
   JOIN club_members cm ON c.id = cm.club_id
   WHERE cm.user_id = ?
@@ -48,7 +48,7 @@ foreach ($adminClubs as $club) {
   }
 }
 
-$defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode((string)($user['name'] ?? 'User')) . '&size=80&background=0D6EFD&color=fff';
+$defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode((string)($user['name'] ?? 'User')) . '&size=120&background=1e3a5f&color=fff&bold=true';
 $avatarUrl = !empty($user['profile_picture_url']) ? $user['profile_picture_url'] : $defaultAvatar;
 
 $location = array_filter([
@@ -56,20 +56,18 @@ $location = array_filter([
   $user['city'] ?? null,
   $user['country'] ?? null
 ]);
-$locationStr = $location ? implode(', ', $location) : 'Not set';
+$locationStr = $location ? implode(', ', $location) : 'Location not set';
 
 $totalPending = 0;
 foreach ($adminClubs as $club) {
   $totalPending += (int)($club['pending_count'] ?? 0);
 }
 
-// Fetch upcoming open competitions in user's country
 $userCountry = $user['country'] ?? '';
 $userTown = $user['town'] ?? '';
 $upcomingCompetitions = [];
 
 if ($userCountry !== '') {
-  // First try to get competitions in the same town/city
   if ($userTown !== '') {
     $stmt = $pdo->prepare("
       SELECT comp.*, c.name as club_name, c.slug as club_slug, 1 as is_local
@@ -86,7 +84,6 @@ if ($userCountry !== '') {
     $upcomingCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
   
-  // Then fill with other competitions in the country
   $existingIds = array_column($upcomingCompetitions, 'id');
   $stmt = $pdo->prepare("
     SELECT comp.*, c.name as club_name, c.slug as club_slug, 0 as is_local
@@ -102,27 +99,12 @@ if ($userCountry !== '') {
   $countryComps = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
   foreach ($countryComps as $comp) {
-    if (!in_array($comp['id'], $existingIds) && count($upcomingCompetitions) < 10) {
+    if (!in_array($comp['id'], $existingIds) && count($upcomingCompetitions) < 6) {
       $upcomingCompetitions[] = $comp;
     }
   }
 }
 
-// Fetch recently added open competitions (newest first)
-$recentCompetitions = [];
-$stmt = $pdo->prepare("
-  SELECT comp.*, c.name as club_name, c.slug as club_slug
-  FROM competitions comp
-  JOIN clubs c ON comp.club_id = c.id
-  WHERE comp.visibility = 'open'
-    AND comp.competition_date >= CURDATE()
-  ORDER BY comp.created_at DESC
-  LIMIT 5
-");
-$stmt->execute();
-$recentCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Also get private competitions from clubs user is a member of
 $memberClubIds = array_column($memberClubs, 'id');
 $adminClubIds = array_column($adminClubs, 'id');
 $allUserClubIds = array_unique(array_merge($memberClubIds, $adminClubIds));
@@ -138,27 +120,137 @@ if (!empty($allUserClubIds)) {
       AND comp.competition_date >= CURDATE()
       AND comp.club_id IN ($placeholders)
     ORDER BY comp.competition_date ASC
-    LIMIT 10
+    LIMIT 6
   ");
   $stmt->execute($allUserClubIds);
   $privateCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard - Angling Club Manager</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-dark: #1e3a5f;
+      --primary: #2d5a87;
+      --accent: #3d7ab5;
+    }
+    body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%); min-height: 100vh; }
+    .navbar-custom { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); }
+    .profile-card {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: white;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 4px solid rgba(255,255,255,0.3);
+      object-fit: cover;
+    }
+    .quick-action-card {
+      border: none;
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+    }
+    .quick-action-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    }
+    .quick-action-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .section-card {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .section-header {
+      background: transparent;
+      border-bottom: 1px solid #eee;
+      padding: 1.25rem 1.5rem;
+    }
+    .club-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .club-item:last-child { border-bottom: none; }
+    .club-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #e9ecef;
+    }
+    .club-logo-placeholder {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .comp-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border-left: 4px solid var(--accent);
+      transition: all 0.2s;
+    }
+    .comp-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .comp-card.private { border-left-color: #6c757d; }
+    .comp-card.local { border-left-color: #ffc107; }
+    .badge-pending {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .stat-number {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+    .welcome-banner {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      color: white;
+      padding: 2rem;
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
-    <div class="ms-auto">
-      <a class="btn btn-outline-light btn-sm" href="/public/profile.php">Profile</a>
-      <a class="btn btn-light btn-sm ms-2" href="/public/auth/logout.php">Logout</a>
+    <a class="navbar-brand fw-bold" href="/">Angling Club Manager</a>
+    <div class="ms-auto d-flex align-items-center gap-2">
+      <a class="btn btn-outline-light btn-sm" href="/public/profile.php">Edit Profile</a>
+      <a class="btn btn-light btn-sm" href="/public/auth/logout.php">Logout</a>
     </div>
   </div>
 </nav>
@@ -166,278 +258,250 @@ if (!empty($allUserClubIds)) {
 <div class="container py-4">
 
   <?php if ($totalPending > 0): ?>
-    <div class="alert alert-warning d-flex align-items-center mb-4">
-      <strong class="me-2">You have <?= $totalPending ?> pending membership request<?= $totalPending > 1 ? 's' : '' ?>!</strong>
-      <span class="text-muted">Review them in the club management section below.</span>
+    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" style="border-radius: 12px;">
+      <span class="badge badge-pending text-white me-3 px-3 py-2"><?= $totalPending ?></span>
+      <div>
+        <strong>Pending Membership Request<?= $totalPending > 1 ? 's' : '' ?></strong>
+        <span class="text-muted d-none d-md-inline"> - Review in your club management below</span>
+      </div>
     </div>
   <?php endif; ?>
 
   <div class="row g-4">
-    <div class="col-md-4">
-      <div class="card shadow-sm">
-        <div class="card-body text-center">
-          <img src="<?= e($avatarUrl) ?>" alt="Avatar" class="rounded-circle mb-3" width="80" height="80">
-          <h5 class="mb-0"><?= e($user['name'] ?? '') ?></h5>
-          <div class="text-muted small"><?= e($user['email'] ?? '') ?></div>
-          <div class="mt-2 small"><strong>Location:</strong> <?= e($locationStr) ?></div>
-        </div>
+    
+    <div class="col-lg-4">
+      <div class="profile-card p-4 text-center mb-4">
+        <img src="<?= e($avatarUrl) ?>" alt="Avatar" class="profile-avatar mb-3">
+        <h4 class="mb-1"><?= e($user['name'] ?? 'Welcome!') ?></h4>
+        <p class="opacity-75 mb-2 small"><?= e($user['email'] ?? '') ?></p>
+        <p class="opacity-75 mb-0 small">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+            <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
+          </svg>
+          <?= e($locationStr) ?>
+        </p>
       </div>
 
+      <h6 class="text-muted text-uppercase small fw-bold mb-3 px-1">Quick Actions</h6>
+      
+      <a href="/public/clubs.php" class="quick-action-card card mb-3">
+        <div class="card-body d-flex align-items-center">
+          <div class="quick-action-icon bg-primary bg-opacity-10 text-primary me-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+              <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
+              <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+            </svg>
+          </div>
+          <div>
+            <h6 class="mb-0">Browse Clubs</h6>
+            <small class="text-muted">Find and join angling clubs</small>
+          </div>
+        </div>
+      </a>
+
+      <a href="/public/competitions.php" class="quick-action-card card mb-3">
+        <div class="card-body d-flex align-items-center">
+          <div class="quick-action-icon bg-warning bg-opacity-10 text-warning me-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5c0 .538-.012 1.05-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33.076 33.076 0 0 1 2.5.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h6 class="mb-0">Browse Competitions</h6>
+            <small class="text-muted">Find open fishing events</small>
+          </div>
+        </div>
+      </a>
+
       <?php if (!$hasOwnClub): ?>
-        <div class="card shadow-sm mt-4">
+        <a href="/public/create_club.php" class="quick-action-card card mb-3">
+          <div class="card-body d-flex align-items-center">
+            <div class="quick-action-icon bg-success bg-opacity-10 text-success me-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+              </svg>
+            </div>
+            <div>
+              <h6 class="mb-0">Create a Club</h6>
+              <small class="text-muted">Start your own angling club</small>
+            </div>
+          </div>
+        </a>
+      <?php endif; ?>
+      
+      <?php if ($userCountry === ''): ?>
+        <div class="card border-0 bg-info bg-opacity-10 mb-3">
           <div class="card-body">
-            <h6 class="mb-3">Quick actions</h6>
-            <a class="btn btn-primary w-100" href="/public/create_club.php">Create Club</a>
+            <p class="small text-info mb-2"><strong>Tip:</strong> Set your location to see local competitions!</p>
+            <a href="/public/profile.php" class="btn btn-info btn-sm">Update Profile</a>
           </div>
         </div>
       <?php endif; ?>
     </div>
 
-    <div class="col-md-8">
+    <div class="col-lg-8">
       
+      <?php if (empty($adminClubs) && empty($memberClubs)): ?>
+        <div class="welcome-banner mb-4">
+          <h3 class="mb-2">Welcome to Angling Club Manager!</h3>
+          <p class="opacity-90 mb-3">You're not linked to any clubs yet. Get started by browsing clubs to join or create your own.</p>
+          <a href="/public/clubs.php" class="btn btn-light me-2">Browse Clubs</a>
+          <a href="/public/create_club.php" class="btn btn-outline-light">Create Club</a>
+        </div>
+      <?php endif; ?>
+
       <?php if (!empty($adminClubs)): ?>
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Clubs You Manage</h5>
+        <div class="section-card card mb-4">
+          <div class="section-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Clubs You Manage</h5>
           </div>
-          <div class="card-body">
-            <div class="list-group list-group-flush">
-              <?php foreach ($adminClubs as $club): ?>
-                <?php $slug = $club['slug'] ?? ''; ?>
-                <div class="list-group-item px-0">
-                  <div class="d-flex w-100 justify-content-between align-items-start">
-                    <div>
-                      <h6 class="mb-1">
-                        <a href="/public/club.php?slug=<?= e($slug) ?>" class="text-decoration-none">
-                          <?= e($club['name'] ?? '') ?>
-                        </a>
-                        <?php if ($club['admin_role'] === 'owner'): ?>
-                          <span class="badge bg-warning text-dark">Owner</span>
-                        <?php else: ?>
-                          <span class="badge bg-secondary">Admin</span>
-                        <?php endif; ?>
-                      </h6>
-                      <div class="small text-muted">
-                        <?= (int)$club['member_count'] ?> member<?= $club['member_count'] != 1 ? 's' : '' ?>
-                        <?php if (!empty($club['contact_email'])): ?>
-                          &bull; <?= e($club['contact_email']) ?>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                    <div class="text-end">
-                      <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm me-1">
-                        Competitions
-                      </a>
-                      <?php if ((int)$club['pending_count'] > 0): ?>
-                        <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-warning btn-sm">
-                          <?= $club['pending_count'] ?> Pending
-                        </a>
-                      <?php else: ?>
-                        <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-secondary btn-sm">
-                          Members
-                        </a>
-                      <?php endif; ?>
-                    </div>
+          <div class="card-body px-4">
+            <?php foreach ($adminClubs as $club): ?>
+              <?php $slug = $club['slug'] ?? ''; ?>
+              <div class="club-item d-flex align-items-center">
+                <?php if (!empty($club['logo_url'])): ?>
+                  <img src="<?= e($club['logo_url']) ?>" alt="" class="club-logo me-3">
+                <?php else: ?>
+                  <div class="club-logo-placeholder me-3"><?= strtoupper(substr($club['name'], 0, 1)) ?></div>
+                <?php endif; ?>
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center mb-1">
+                    <a href="/public/club.php?slug=<?= e($slug) ?>" class="fw-semibold text-decoration-none text-dark me-2">
+                      <?= e($club['name'] ?? '') ?>
+                    </a>
+                    <?php if ($club['admin_role'] === 'owner'): ?>
+                      <span class="badge bg-warning text-dark">Owner</span>
+                    <?php else: ?>
+                      <span class="badge bg-secondary">Admin</span>
+                    <?php endif; ?>
                   </div>
+                  <small class="text-muted"><?= (int)$club['member_count'] ?> member<?= $club['member_count'] != 1 ? 's' : '' ?></small>
                 </div>
-              <?php endforeach; ?>
-            </div>
+                <div class="d-flex gap-2">
+                  <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm">Competitions</a>
+                  <?php if ((int)$club['pending_count'] > 0): ?>
+                    <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-warning btn-sm">
+                      <?= $club['pending_count'] ?> Pending
+                    </a>
+                  <?php else: ?>
+                    <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-secondary btn-sm">Members</a>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       <?php endif; ?>
 
       <?php if (!empty($memberClubs)): ?>
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Your Memberships</h5>
+        <div class="section-card card mb-4">
+          <div class="section-header">
+            <h5 class="mb-0 fw-bold">Your Memberships</h5>
           </div>
-          <div class="card-body">
-            <div class="list-group list-group-flush">
-              <?php foreach ($memberClubs as $club): ?>
-                <?php $slug = $club['slug'] ?? ''; ?>
-                <div class="list-group-item px-0">
-                  <div class="d-flex w-100 justify-content-between align-items-center">
-                    <div>
-                      <h6 class="mb-1">
-                        <a href="/public/club.php?slug=<?= e($slug) ?>" class="text-decoration-none">
-                          <?= e($club['name'] ?? '') ?>
-                        </a>
-                        <?php if ($club['membership_status'] === 'active'): ?>
-                          <span class="badge bg-success">Member</span>
-                        <?php elseif ($club['membership_status'] === 'pending'): ?>
-                          <span class="badge bg-info">Pending</span>
-                        <?php elseif ($club['membership_status'] === 'suspended'): ?>
-                          <span class="badge bg-danger">Suspended</span>
-                        <?php endif; ?>
-                      </h6>
-                      <div class="small text-muted">
-                        <?php if ($club['town']): ?>
-                          <?= e($club['town']) ?>
-                        <?php endif; ?>
-                        <?php if ($club['membership_status'] === 'active'): ?>
-                          &bull; Joined <?= date('M j, Y', strtotime($club['joined_at'])) ?>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                    <div>
-                      <a href="/public/club.php?slug=<?= e($slug) ?>" class="btn btn-outline-primary btn-sm">View</a>
-                    </div>
+          <div class="card-body px-4">
+            <?php foreach ($memberClubs as $club): ?>
+              <?php $slug = $club['slug'] ?? ''; ?>
+              <div class="club-item d-flex align-items-center">
+                <?php if (!empty($club['logo_url'])): ?>
+                  <img src="<?= e($club['logo_url']) ?>" alt="" class="club-logo me-3">
+                <?php else: ?>
+                  <div class="club-logo-placeholder me-3"><?= strtoupper(substr($club['name'], 0, 1)) ?></div>
+                <?php endif; ?>
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center mb-1">
+                    <a href="/public/club.php?slug=<?= e($slug) ?>" class="fw-semibold text-decoration-none text-dark me-2">
+                      <?= e($club['name'] ?? '') ?>
+                    </a>
+                    <?php if ($club['membership_status'] === 'active'): ?>
+                      <span class="badge bg-success">Member</span>
+                    <?php elseif ($club['membership_status'] === 'pending'): ?>
+                      <span class="badge bg-info">Pending</span>
+                    <?php elseif ($club['membership_status'] === 'suspended'): ?>
+                      <span class="badge bg-danger">Suspended</span>
+                    <?php endif; ?>
                   </div>
+                  <small class="text-muted">
+                    <?php if ($club['town']): ?><?= e($club['town']) ?> &bull; <?php endif; ?>
+                    <?php if ($club['membership_status'] === 'active'): ?>
+                      Joined <?= date('M j, Y', strtotime($club['joined_at'])) ?>
+                    <?php endif; ?>
+                  </small>
                 </div>
-              <?php endforeach; ?>
-            </div>
-          </div>
-        </div>
-      <?php endif; ?>
-
-      <?php if (empty($adminClubs) && empty($memberClubs)): ?>
-        <div class="card shadow-sm">
-          <div class="card-body text-center py-5">
-            <h5 class="text-muted mb-3">Welcome to Angling Club Manager!</h5>
-            <p class="text-muted">You're not linked to any clubs yet.</p>
-            <a href="/public/create_club.php" class="btn btn-primary">Create Your Club</a>
-            <p class="text-muted mt-3 small">Or browse public clubs and request to join one.</p>
-            <a href="/" class="btn btn-outline-secondary btn-sm">Browse Clubs</a>
-          </div>
-        </div>
-      <?php endif; ?>
-
-      <?php if (!empty($recentCompetitions)): ?>
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Recently Added Competitions</h5>
-            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All</a>
-          </div>
-          <div class="card-body">
-            <div class="list-group list-group-flush">
-              <?php foreach ($recentCompetitions as $comp): ?>
-                <div class="list-group-item px-0">
-                  <div class="d-flex w-100 justify-content-between align-items-start">
-                    <div>
-                      <h6 class="mb-1">
-                        <?= e($comp['title']) ?>
-                        <span class="badge bg-info">New</span>
-                      </h6>
-                      <div class="small text-muted">
-                        <?= e($comp['venue_name']) ?>
-                        <?php if ($comp['town']): ?>
-                          &bull; <?= e($comp['town']) ?>
-                        <?php endif; ?>
-                        <?php if ($comp['country']): ?>
-                          , <?= e($comp['country']) ?>
-                        <?php endif; ?>
-                      </div>
-                      <div class="small">
-                        <?= date('D, j M Y', strtotime($comp['competition_date'])) ?>
-                        <?php if ($comp['start_time']): ?>
-                          at <?= date('g:i A', strtotime($comp['start_time'])) ?>
-                        <?php endif; ?>
-                      </div>
-                      <div class="small text-muted">
-                        Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
-                      </div>
-                    </div>
-                    <div>
-                      <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                        <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">Map</a>
-                      <?php endif; ?>
-                    </div>
-                  </div>
-                </div>
-              <?php endforeach; ?>
-            </div>
+                <a href="/public/club.php?slug=<?= e($slug) ?>" class="btn btn-outline-primary btn-sm">View Club</a>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       <?php endif; ?>
 
       <?php if (!empty($upcomingCompetitions) || !empty($privateCompetitions)): ?>
-        <div class="card shadow-sm mb-4">
-          <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Competitions Near You</h5>
-            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All</a>
+        <div class="section-card card mb-4">
+          <div class="section-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Upcoming Competitions</h5>
+            <a href="/public/competitions.php" class="btn btn-primary btn-sm">Browse All</a>
           </div>
           <div class="card-body">
-            <?php if (empty($upcomingCompetitions) && empty($privateCompetitions)): ?>
-              <p class="text-muted mb-0">No upcoming competitions in your area.</p>
-            <?php else: ?>
-              <div class="list-group list-group-flush">
-                <?php foreach ($upcomingCompetitions as $comp): ?>
-                  <div class="list-group-item px-0">
-                    <div class="d-flex w-100 justify-content-between align-items-start">
-                      <div>
-                        <h6 class="mb-1">
-                          <?= e($comp['title']) ?>
-                          <?php if (!empty($comp['is_local'])): ?>
-                            <span class="badge bg-warning text-dark">Local</span>
-                          <?php endif; ?>
-                          <span class="badge bg-success">Open</span>
-                        </h6>
-                        <div class="small text-muted">
-                          <?= e($comp['venue_name']) ?>
-                          <?php if ($comp['town']): ?>
-                            &bull; <?= e($comp['town']) ?>
-                          <?php endif; ?>
-                        </div>
-                        <div class="small">
-                          <?= date('D, j M Y', strtotime($comp['competition_date'])) ?>
-                          <?php if ($comp['start_time']): ?>
-                            at <?= date('g:i A', strtotime($comp['start_time'])) ?>
-                          <?php endif; ?>
-                        </div>
-                        <div class="small text-muted">
-                          Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
-                        </div>
-                      </div>
-                      <div>
-                        <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                          <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">Map</a>
-                        <?php endif; ?>
-                      </div>
+            <?php foreach ($upcomingCompetitions as $comp): ?>
+              <div class="comp-card <?= !empty($comp['is_local']) ? 'local' : '' ?>">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h6 class="mb-1">
+                      <?= e($comp['title']) ?>
+                      <?php if (!empty($comp['is_local'])): ?>
+                        <span class="badge bg-warning text-dark">Local</span>
+                      <?php endif; ?>
+                      <span class="badge bg-success">Open</span>
+                    </h6>
+                    <div class="small text-muted mb-1">
+                      <?= e($comp['venue_name']) ?>
+                      <?php if ($comp['town']): ?> &bull; <?= e($comp['town']) ?><?php endif; ?>
+                    </div>
+                    <div class="small fw-medium">
+                      <?= date('l, j M Y', strtotime($comp['competition_date'])) ?>
+                      <?php if ($comp['start_time']): ?> at <?= date('g:i A', strtotime($comp['start_time'])) ?><?php endif; ?>
+                    </div>
+                    <div class="small text-muted">
+                      by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
                     </div>
                   </div>
-                <?php endforeach; ?>
-                
-                <?php foreach ($privateCompetitions as $comp): ?>
-                  <div class="list-group-item px-0">
-                    <div class="d-flex w-100 justify-content-between align-items-start">
-                      <div>
-                        <h6 class="mb-1">
-                          <?= e($comp['title']) ?>
-                          <span class="badge bg-secondary">Members Only</span>
-                        </h6>
-                        <div class="small text-muted">
-                          <?= e($comp['venue_name']) ?>
-                          <?php if ($comp['town']): ?>
-                            &bull; <?= e($comp['town']) ?>
-                          <?php endif; ?>
-                        </div>
-                        <div class="small">
-                          <?= date('D, j M Y', strtotime($comp['competition_date'])) ?>
-                          <?php if ($comp['start_time']): ?>
-                            at <?= date('g:i A', strtotime($comp['start_time'])) ?>
-                          <?php endif; ?>
-                        </div>
-                        <div class="small text-muted">
-                          Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
-                        </div>
-                      </div>
-                      <div>
-                        <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                          <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">Map</a>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                  </div>
-                <?php endforeach; ?>
+                  <?php if ($comp['latitude'] && $comp['longitude']): ?>
+                    <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
+                      Map
+                    </a>
+                  <?php endif; ?>
+                </div>
               </div>
-            <?php endif; ?>
-          </div>
-        </div>
-      <?php elseif ($userCountry === ''): ?>
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <p class="text-muted mb-2">Set your location in your <a href="/public/profile.php">profile</a> to see competitions near you.</p>
-            <a href="/public/competitions.php" class="btn btn-outline-primary btn-sm">Browse All Competitions</a>
+            <?php endforeach; ?>
+            
+            <?php foreach ($privateCompetitions as $comp): ?>
+              <div class="comp-card private">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h6 class="mb-1">
+                      <?= e($comp['title']) ?>
+                      <span class="badge bg-secondary">Members Only</span>
+                    </h6>
+                    <div class="small text-muted mb-1">
+                      <?= e($comp['venue_name']) ?>
+                      <?php if ($comp['town']): ?> &bull; <?= e($comp['town']) ?><?php endif; ?>
+                    </div>
+                    <div class="small fw-medium">
+                      <?= date('l, j M Y', strtotime($comp['competition_date'])) ?>
+                      <?php if ($comp['start_time']): ?> at <?= date('g:i A', strtotime($comp['start_time'])) ?><?php endif; ?>
+                    </div>
+                    <div class="small text-muted">
+                      by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
+                    </div>
+                  </div>
+                  <?php if ($comp['latitude'] && $comp['longitude']): ?>
+                    <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-secondary btn-sm">
+                      Map
+                    </a>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       <?php endif; ?>
@@ -446,5 +510,6 @@ if (!empty($allUserClubIds)) {
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
