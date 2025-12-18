@@ -53,12 +53,36 @@ if (!$club['is_public'] && !$isAdmin && !$isMember) {
   exit('This club is private');
 }
 
+$isInAnyClub = false;
+$existingClubName = null;
+if ($userId) {
+  $stmt = $pdo->prepare("
+    SELECT c.name FROM club_members cm 
+    JOIN clubs c ON cm.club_id = c.id 
+    WHERE cm.user_id = ? AND cm.membership_status IN ('active', 'pending') AND cm.club_id != ?
+  ");
+  $stmt->execute([$userId, $club['id']]);
+  $existingClubRow = $stmt->fetch();
+  if ($existingClubRow) {
+    $isInAnyClub = true;
+    $existingClubName = $existingClubRow['name'];
+  }
+  
+  $stmt = $pdo->prepare("SELECT c.name FROM clubs c JOIN club_admins ca ON c.id = ca.club_id WHERE ca.user_id = ?");
+  $stmt->execute([$userId]);
+  $ownedClub = $stmt->fetch();
+  if ($ownedClub) {
+    $isInAnyClub = true;
+    $existingClubName = $ownedClub['name'];
+  }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   if (!$userId) {
     redirect('/public/auth/login.php');
   }
   
-  if ($_POST['action'] === 'request_join' && !$isAdmin && !$membershipStatus) {
+  if ($_POST['action'] === 'request_join' && !$isAdmin && !$membershipStatus && !$isInAnyClub) {
     try {
       $stmt = $pdo->prepare("INSERT INTO club_members (club_id, user_id, membership_status) VALUES (?, ?, 'pending')");
       $stmt->execute([$club['id'], $userId]);
@@ -422,6 +446,9 @@ $pastCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php elseif ($membershipStatus === 'expired'): ?>
               <h5 class="mb-3">Membership Expired</h5>
               <p class="text-muted">Your membership has expired. Contact the club admin to renew.</p>
+            <?php elseif ($isInAnyClub): ?>
+              <h5 class="mb-3">Already a Member</h5>
+              <p class="text-muted">You are already a member of <strong><?= e($existingClubName) ?></strong>. You can only belong to one club at a time.</p>
             <?php else: ?>
               <h5 class="mb-3">Join This Club</h5>
               <p class="text-muted">Request to become a member of this angling club.</p>

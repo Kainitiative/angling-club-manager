@@ -48,6 +48,8 @@ foreach ($adminClubs as $club) {
   }
 }
 
+$isInAnyClub = $hasOwnClub || !empty($memberClubs) || !empty($adminClubs);
+
 $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode((string)($user['name'] ?? 'User')) . '&size=120&background=1e3a5f&color=fff&bold=true';
 $avatarUrl = !empty($user['profile_picture_url']) ? $user['profile_picture_url'] : $defaultAvatar;
 
@@ -284,6 +286,7 @@ if (!empty($allUserClubIds)) {
 
       <h6 class="text-muted text-uppercase small fw-bold mb-3 px-1">Quick Actions</h6>
       
+      <?php if (!$isInAnyClub): ?>
       <a href="/public/clubs.php" class="quick-action-card card mb-3">
         <div class="card-body d-flex align-items-center">
           <div class="quick-action-icon bg-primary bg-opacity-10 text-primary me-3">
@@ -299,6 +302,7 @@ if (!empty($allUserClubIds)) {
           </div>
         </div>
       </a>
+      <?php endif; ?>
 
       <a href="/public/competitions.php" class="quick-action-card card mb-3">
         <div class="card-body d-flex align-items-center">
@@ -314,7 +318,7 @@ if (!empty($allUserClubIds)) {
         </div>
       </a>
 
-      <?php if (!$hasOwnClub): ?>
+      <?php if (!$isInAnyClub): ?>
         <a href="/public/create_club.php" class="quick-action-card card mb-3">
           <div class="card-body d-flex align-items-center">
             <div class="quick-action-icon bg-success bg-opacity-10 text-success me-3">

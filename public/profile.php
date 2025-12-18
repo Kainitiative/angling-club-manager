@@ -18,6 +18,34 @@ if (!$user) {
   exit("User not found");
 }
 
+$stmt = $pdo->prepare("
+  SELECT c.id, c.name, c.slug, c.logo_url, cm.membership_status, cm.joined_at
+  FROM clubs c
+  JOIN club_members cm ON c.id = cm.club_id
+  WHERE cm.user_id = ?
+  ORDER BY cm.joined_at DESC
+  LIMIT 1
+");
+$stmt->execute([$userId]);
+$memberClub = $stmt->fetch();
+
+if (!$memberClub) {
+  $stmt = $pdo->prepare("
+    SELECT c.id, c.name, c.slug, c.logo_url, ca.admin_role, ca.created_at as joined_at
+    FROM clubs c
+    JOIN club_admins ca ON c.id = ca.club_id
+    WHERE ca.user_id = ?
+    ORDER BY ca.created_at DESC
+    LIMIT 1
+  ");
+  $stmt->execute([$userId]);
+  $adminClub = $stmt->fetch();
+} else {
+  $adminClub = null;
+}
+
+$userClub = $memberClub ?: $adminClub;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $name = trim((string)($_POST['name'] ?? ''));
   $dob = trim((string)($_POST['dob'] ?? ''));
@@ -113,6 +141,51 @@ $avatarUrl = $user['profile_picture_url'] ?: $defaultAvatar;
           <li><?= e($err) ?></li>
         <?php endforeach; ?>
       </ul>
+    </div>
+  <?php endif; ?>
+
+  <?php if ($userClub): ?>
+    <div class="card mb-4 border-primary">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">Your Club Membership</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <?php if (!empty($userClub['logo_url'])): ?>
+            <img src="<?= e($userClub['logo_url']) ?>" alt="" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+          <?php else: ?>
+            <div class="rounded me-3 d-flex align-items-center justify-content-center bg-primary text-white fw-bold" style="width: 50px; height: 50px; font-size: 1.25rem;">
+              <?= strtoupper(substr($userClub['name'], 0, 1)) ?>
+            </div>
+          <?php endif; ?>
+          <div class="flex-grow-1">
+            <h5 class="mb-1">
+              <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="text-decoration-none"><?= e($userClub['name']) ?></a>
+            </h5>
+            <div class="small text-muted">
+              <?php if (isset($userClub['admin_role'])): ?>
+                <span class="badge bg-warning text-dark"><?= ucfirst($userClub['admin_role']) ?></span>
+              <?php elseif ($userClub['membership_status'] === 'active'): ?>
+                <span class="badge bg-success">Member</span>
+              <?php elseif ($userClub['membership_status'] === 'pending'): ?>
+                <span class="badge bg-info">Pending Approval</span>
+              <?php endif; ?>
+              <?php if ($userClub['joined_at']): ?>
+                &bull; Since <?= date('M j, Y', strtotime($userClub['joined_at'])) ?>
+              <?php endif; ?>
+            </div>
+          </div>
+          <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="btn btn-outline-primary btn-sm">View Club</a>
+        </div>
+      </div>
+    </div>
+  <?php else: ?>
+    <div class="card mb-4 bg-light">
+      <div class="card-body text-center py-4">
+        <p class="text-muted mb-2">You're not a member of any club yet.</p>
+        <a href="/public/clubs.php" class="btn btn-primary btn-sm">Browse Clubs</a>
+        <a href="/public/create_club.php" class="btn btn-outline-primary btn-sm">Create a Club</a>
+      </div>
     </div>
   <?php endif; ?>
 

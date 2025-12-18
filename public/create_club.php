@@ -18,6 +18,15 @@ if ($existingClub) {
   exit;
 }
 
+$stmt = $pdo->prepare("SELECT cm.id FROM club_members cm WHERE cm.user_id = ? AND cm.membership_status IN ('active', 'pending')");
+$stmt->execute([$userId]);
+$existingMembership = $stmt->fetch();
+
+if ($existingMembership) {
+  header('Location: /public/dashboard.php');
+  exit;
+}
+
 $fishingStyleOptions = [
   'coarse' => 'Coarse Fishing',
   'carp' => 'Carp Fishing',
