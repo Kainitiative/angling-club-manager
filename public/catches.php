@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isMember || $isAdmin)) {
   
   if ($action === 'log_catch') {
     $species = trim($_POST['species'] ?? '');
+    $customSpecies = trim($_POST['custom_species'] ?? '');
     $weightKg = $_POST['weight_kg'] ? (float)$_POST['weight_kg'] : null;
     $lengthCm = $_POST['length_cm'] ? (float)$_POST['length_cm'] : null;
     $location = trim($_POST['location_description'] ?? '');
@@ -56,11 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isMember || $isAdmin)) {
     $notes = trim($_POST['notes'] ?? '');
     $photoUrl = null;
     
+    if ($species === 'Other' && $customSpecies) {
+      $species = $customSpecies;
+    }
+    
     if (!$species) {
       $message = 'Please select a species';
       $messageType = 'danger';
-    } elseif (!in_array($species, $validSpeciesNames, true)) {
+    } elseif ($_POST['species'] !== 'Other' && !in_array($species, $validSpeciesNames, true)) {
       $message = 'Invalid species selected';
+      $messageType = 'danger';
+    } elseif ($_POST['species'] === 'Other' && !$customSpecies) {
+      $message = 'Please enter the fish name';
+      $messageType = 'danger';
+    } elseif ($_POST['species'] === 'Other' && strlen($customSpecies) > 100) {
+      $message = 'Fish name is too long (max 100 characters)';
       $messageType = 'danger';
     } else {
       if (!empty($_FILES['photo']['name']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -322,7 +333,7 @@ if ($userId && ($isMember || $isAdmin)) {
               
               <div class="mb-3">
                 <label for="species" class="form-label">Species <span class="text-danger">*</span></label>
-                <select class="form-select" id="species" name="species" required>
+                <select class="form-select" id="species" name="species" required onchange="toggleCustomSpecies(this)">
                   <option value="">Select species...</option>
                   <?php 
                   $currentCategory = '';
@@ -337,6 +348,11 @@ if ($userId && ($isMember || $isAdmin)) {
                   <?php endforeach; ?>
                   <?php if ($currentCategory) echo '</optgroup>'; ?>
                 </select>
+              </div>
+              
+              <div class="mb-3" id="custom-species-container" style="display: none;">
+                <label for="custom_species" class="form-label">Fish Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="custom_species" name="custom_species" placeholder="Enter fish name" maxlength="100">
               </div>
               
               <div class="row mb-3">
@@ -435,5 +451,19 @@ if ($userId && ($isMember || $isAdmin)) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleCustomSpecies(select) {
+  var container = document.getElementById('custom-species-container');
+  var input = document.getElementById('custom_species');
+  if (select.value === 'Other') {
+    container.style.display = 'block';
+    input.required = true;
+  } else {
+    container.style.display = 'none';
+    input.required = false;
+    input.value = '';
+  }
+}
+</script>
 </body>
 </html>
