@@ -1,22 +1,3 @@
--- Catch logs - members log their catches
-CREATE TABLE IF NOT EXISTS catch_logs (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  club_id INT NOT NULL,
-  user_id INT NOT NULL,
-  species VARCHAR(100) NOT NULL,
-  weight_kg DECIMAL(6,3) NULL,
-  length_cm DECIMAL(6,2) NULL,
-  location_description VARCHAR(255) NULL,
-  catch_date DATE NOT NULL,
-  photo_url VARCHAR(500) NULL,
-  notes TEXT NULL,
-  is_personal_best TINYINT(1) DEFAULT 0,
-  is_club_record TINYINT(1) DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 -- Fish species reference table
 CREATE TABLE IF NOT EXISTS fish_species (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -48,10 +29,29 @@ INSERT INTO fish_species (name, category, display_order) VALUES
 ('Flounder', 'Sea', 26),
 ('Other', 'Other', 99);
 
+-- Catch logs - members log their catches
+CREATE TABLE IF NOT EXISTS catch_logs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  club_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  species VARCHAR(100) NOT NULL,
+  weight_kg DECIMAL(6,3) NULL,
+  length_cm DECIMAL(6,2) NULL,
+  location_description VARCHAR(255) NULL,
+  catch_date DATE NOT NULL,
+  photo_url VARCHAR(500) NULL,
+  notes TEXT NULL,
+  is_personal_best TINYINT(1) DEFAULT 0,
+  is_club_record TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Competition seasons/leagues
 CREATE TABLE IF NOT EXISTS competition_seasons (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  club_id INT NOT NULL,
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  club_id BIGINT UNSIGNED NOT NULL,
   name VARCHAR(200) NOT NULL,
   description TEXT NULL,
   start_date DATE NOT NULL,
@@ -64,14 +64,14 @@ CREATE TABLE IF NOT EXISTS competition_seasons (
 );
 
 -- Link competitions to seasons
-ALTER TABLE competitions ADD COLUMN season_id INT NULL;
+ALTER TABLE competitions ADD COLUMN season_id BIGINT UNSIGNED NULL;
 ALTER TABLE competitions ADD COLUMN points_multiplier DECIMAL(3,2) DEFAULT 1.00;
 
 -- Member season standings (cached/calculated)
 CREATE TABLE IF NOT EXISTS season_standings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  season_id INT NOT NULL,
-  user_id INT NOT NULL,
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  season_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
   total_points DECIMAL(10,2) DEFAULT 0,
   total_weight_kg DECIMAL(10,3) DEFAULT 0,
   competitions_entered INT DEFAULT 0,
@@ -85,12 +85,12 @@ CREATE TABLE IF NOT EXISTS season_standings (
 
 -- Personal bests tracking per species per member
 CREATE TABLE IF NOT EXISTS personal_bests (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  club_id INT NOT NULL,
-  user_id INT NOT NULL,
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  club_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
   species VARCHAR(100) NOT NULL,
   weight_kg DECIMAL(6,3) NOT NULL,
-  catch_log_id INT NULL,
+  catch_log_id BIGINT UNSIGNED NULL,
   achieved_date DATE NOT NULL,
   FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -100,12 +100,12 @@ CREATE TABLE IF NOT EXISTS personal_bests (
 
 -- Club records per species
 CREATE TABLE IF NOT EXISTS club_records (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  club_id INT NOT NULL,
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  club_id BIGINT UNSIGNED NOT NULL,
   species VARCHAR(100) NOT NULL,
   weight_kg DECIMAL(6,3) NOT NULL,
-  user_id INT NOT NULL,
-  catch_log_id INT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  catch_log_id BIGINT UNSIGNED NULL,
   achieved_date DATE NOT NULL,
   FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
