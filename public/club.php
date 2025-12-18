@@ -209,6 +209,53 @@ $committeeRoleLabels = [
   'safety_officer' => 'Safety Officer',
   'child_liaison_officer' => 'Child Liaison Officer',
 ];
+
+$stmt = $pdo->prepare("SELECT * FROM club_profile_settings WHERE club_id = ?");
+$stmt->execute([$club['id']]);
+$profileSettings = $stmt->fetch();
+
+$stmt = $pdo->prepare("SELECT * FROM club_membership_fees WHERE club_id = ? AND is_active = 1 ORDER BY display_order, id");
+$stmt->execute([$club['id']]);
+$membershipFees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("SELECT * FROM club_perks WHERE club_id = ? ORDER BY display_order, id");
+$stmt->execute([$club['id']]);
+$clubPerks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("SELECT * FROM club_gallery WHERE club_id = ? ORDER BY display_order, id");
+$stmt->execute([$club['id']]);
+$clubGallery = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+function sanitizeHexColor(string $color, string $default = '#1e3a5f'): string {
+  $color = trim($color);
+  if (preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
+    return $color;
+  }
+  return $default;
+}
+
+function sanitizeUrl(?string $url): ?string {
+  if (!$url) return null;
+  $url = trim($url);
+  if (preg_match('/^https?:\/\//i', $url) && !preg_match('/javascript:/i', $url)) {
+    return filter_var($url, FILTER_SANITIZE_URL);
+  }
+  return null;
+}
+
+$primaryColor = sanitizeHexColor($profileSettings['primary_color'] ?? '', '#1e3a5f');
+$secondaryColor = sanitizeHexColor($profileSettings['secondary_color'] ?? '', '#2d5a87');
+$heroTitle = $profileSettings['hero_title'] ?? null;
+$heroTagline = $profileSettings['hero_tagline'] ?? null;
+$heroImage = sanitizeUrl($profileSettings['hero_image_url'] ?? '');
+$whyJoinText = $profileSettings['why_join_text'] ?? null;
+
+$billingPeriodLabels = [
+  'one_time' => 'One-time',
+  'monthly' => '/month',
+  'quarterly' => '/quarter',
+  'yearly' => '/year',
+];
 ?>
 <!doctype html>
 <html lang="en">
@@ -218,8 +265,14 @@ $committeeRoleLabels = [
   <title><?= e($club['name']) ?> - Angling Club Manager</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: <?= e($primaryColor) ?>;
+      --secondary-color: <?= e($secondaryColor) ?>;
+    }
     .club-header {
-      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+      background: <?= $heroImage ? 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(' . e($heroImage) . ')' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%)' ?>;
+      background-size: cover;
+      background-position: center;
       color: white;
       padding: 60px 0;
     }
@@ -256,7 +309,66 @@ $committeeRoleLabels = [
       border-left: 4px solid #0d6efd;
     }
     .membership-card {
-      border: 2px solid #0d6efd;
+      border: 2px solid var(--primary-color);
+    }
+    .fee-card {
+      border: 2px solid #dee2e6;
+      transition: all 0.2s;
+    }
+    .fee-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .fee-price {
+      color: var(--primary-color);
+    }
+    .perk-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .perk-item:last-child {
+      border-bottom: none;
+    }
+    .perk-item::before {
+      content: "✓";
+      color: var(--primary-color);
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .gallery-img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .gallery-img:hover {
+      transform: scale(1.02);
+    }
+    .social-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: white;
+      text-decoration: none;
+      margin-right: 8px;
+    }
+    .social-link:hover {
+      background: var(--secondary-color);
+      color: white;
+    }
+    .btn-primary {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    .btn-primary:hover {
+      background: var(--secondary-color);
+      border-color: var(--secondary-color);
     }
   </style>
 </head>
@@ -290,9 +402,12 @@ $committeeRoleLabels = [
         <?php endif; ?>
       </div>
       <div class="col">
-        <h1 class="display-5 fw-bold mb-2"><?= e($club['name']) ?></h1>
+        <h1 class="display-5 fw-bold mb-2"><?= e($heroTitle ?: $club['name']) ?></h1>
+        <?php if ($heroTagline): ?>
+          <p class="lead mb-2 opacity-90"><?= e($heroTagline) ?></p>
+        <?php endif; ?>
         <?php if ($club['town'] || $club['city']): ?>
-          <p class="lead mb-0 opacity-75">
+          <p class="mb-0 opacity-75">
             <?= e($club['town'] ?: $club['city']) ?><?= $club['county'] ? ', ' . e($club['county']) : '' ?>
           </p>
         <?php endif; ?>
@@ -300,7 +415,8 @@ $committeeRoleLabels = [
       <div class="col-auto">
         <?php if ($isAdmin): ?>
           <span class="badge bg-warning text-dark fs-6 p-2">Admin</span>
-          <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Members</a>
+          <a href="/public/admin/club_profile.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Edit Profile</a>
+          <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Members</a>
           <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
         <?php elseif ($isMember): ?>
           <?php
@@ -353,6 +469,79 @@ $committeeRoleLabels = [
                 <?= e($fishingStyleLabels[$style] ?? ucfirst($style)) ?>
               </span>
             <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($whyJoinText || !empty($clubPerks)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Why Join <?= e($club['name']) ?>?</h5>
+          </div>
+          <div class="card-body">
+            <?php if ($whyJoinText): ?>
+              <p><?= nl2br(e($whyJoinText)) ?></p>
+            <?php endif; ?>
+            <?php if (!empty($clubPerks)): ?>
+              <div class="mt-3">
+                <?php foreach ($clubPerks as $perk): ?>
+                  <div class="perk-item"><?= e($perk['perk_text']) ?></div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($membershipFees)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Membership Fees</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <?php foreach ($membershipFees as $fee): ?>
+                <div class="col-md-6">
+                  <div class="card fee-card h-100">
+                    <div class="card-body text-center">
+                      <h6 class="mb-2"><?= e($fee['fee_name']) ?></h6>
+                      <div class="fs-3 fw-bold fee-price">
+                        &euro;<?= number_format((float)$fee['amount'], 2) ?>
+                        <small class="fs-6 text-muted fw-normal"><?= $billingPeriodLabels[$fee['billing_period']] ?? '' ?></small>
+                      </div>
+                      <?php if ($fee['description']): ?>
+                        <p class="small text-muted mt-2 mb-0"><?= e($fee['description']) ?></p>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($clubGallery)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Photo Gallery</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <?php foreach ($clubGallery as $photo): 
+                $safeImageUrl = sanitizeUrl($photo['image_url']);
+                if (!$safeImageUrl) continue;
+              ?>
+                <div class="col-md-4 col-6">
+                  <a href="<?= e($safeImageUrl) ?>" target="_blank" rel="noopener noreferrer">
+                    <img src="<?= e($safeImageUrl) ?>" alt="<?= e($photo['caption'] ?? '') ?>" class="gallery-img">
+                  </a>
+                  <?php if ($photo['caption']): ?>
+                    <p class="small text-muted text-center mt-1 mb-0"><?= e($photo['caption']) ?></p>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
           </div>
         </div>
       <?php endif; ?>
@@ -538,13 +727,44 @@ $committeeRoleLabels = [
         </div>
       <?php endif; ?>
 
-      <?php if ($club['contact_email']): ?>
+      <?php 
+        $hasContact = ($profileSettings['contact_email'] ?? '') || ($profileSettings['contact_phone'] ?? '') || ($club['contact_email'] ?? '');
+        $hasSocial = ($profileSettings['facebook_url'] ?? '') || ($profileSettings['instagram_url'] ?? '') || ($profileSettings['twitter_url'] ?? '') || ($profileSettings['website_url'] ?? '');
+      ?>
+      <?php if ($hasContact || $hasSocial): ?>
         <div class="card info-card mb-4">
           <div class="card-header bg-white">
-            <h6 class="mb-0">Contact</h6>
+            <h6 class="mb-0">Contact & Social</h6>
           </div>
           <div class="card-body">
-            <a href="mailto:<?= e($club['contact_email']) ?>"><?= e($club['contact_email']) ?></a>
+            <?php if ($profileSettings['contact_email'] ?? $club['contact_email']): ?>
+              <div class="mb-2">
+                <strong>Email:</strong><br>
+                <a href="mailto:<?= e($profileSettings['contact_email'] ?? $club['contact_email']) ?>"><?= e($profileSettings['contact_email'] ?? $club['contact_email']) ?></a>
+              </div>
+            <?php endif; ?>
+            <?php if ($profileSettings['contact_phone'] ?? ''): ?>
+              <div class="mb-2">
+                <strong>Phone:</strong><br>
+                <?= e($profileSettings['contact_phone']) ?>
+              </div>
+            <?php endif; ?>
+            <?php if ($hasSocial): ?>
+              <div class="mt-3">
+                <?php if ($profileSettings['facebook_url'] ?? ''): ?>
+                  <a href="<?= e($profileSettings['facebook_url']) ?>" target="_blank" class="social-link" title="Facebook">f</a>
+                <?php endif; ?>
+                <?php if ($profileSettings['instagram_url'] ?? ''): ?>
+                  <a href="<?= e($profileSettings['instagram_url']) ?>" target="_blank" class="social-link" title="Instagram">ig</a>
+                <?php endif; ?>
+                <?php if ($profileSettings['twitter_url'] ?? ''): ?>
+                  <a href="<?= e($profileSettings['twitter_url']) ?>" target="_blank" class="social-link" title="Twitter/X">X</a>
+                <?php endif; ?>
+                <?php if ($profileSettings['website_url'] ?? ''): ?>
+                  <a href="<?= e($profileSettings['website_url']) ?>" target="_blank" class="social-link" title="Website">W</a>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
           </div>
         </div>
       <?php endif; ?>
