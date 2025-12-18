@@ -127,6 +127,49 @@ if (!empty($allUserClubIds)) {
   $stmt->execute($allUserClubIds);
   $privateCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+$fishingStats = [
+  'total_catches' => 0,
+  'personal_bests' => 0,
+  'club_records' => 0,
+  'biggest_catch_kg' => 0,
+  'biggest_species' => null,
+  'recent_catches' => []
+];
+
+$tableCheck = $pdo->query("SHOW TABLES LIKE 'catch_logs'")->fetch();
+if ($tableCheck) {
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catch_logs WHERE user_id = ?");
+  $stmt->execute([$userId]);
+  $fishingStats['total_catches'] = (int)$stmt->fetchColumn();
+  
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM personal_bests WHERE user_id = ?");
+  $stmt->execute([$userId]);
+  $fishingStats['personal_bests'] = (int)$stmt->fetchColumn();
+  
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM club_records WHERE user_id = ?");
+  $stmt->execute([$userId]);
+  $fishingStats['club_records'] = (int)$stmt->fetchColumn();
+  
+  $stmt = $pdo->prepare("SELECT species, weight_kg FROM catch_logs WHERE user_id = ? AND weight_kg IS NOT NULL ORDER BY weight_kg DESC LIMIT 1");
+  $stmt->execute([$userId]);
+  $biggest = $stmt->fetch();
+  if ($biggest) {
+    $fishingStats['biggest_catch_kg'] = (float)$biggest['weight_kg'];
+    $fishingStats['biggest_species'] = $biggest['species'];
+  }
+  
+  $stmt = $pdo->prepare("
+    SELECT cl.*, c.name as club_name, c.slug as club_slug
+    FROM catch_logs cl
+    JOIN clubs c ON cl.club_id = c.id
+    WHERE cl.user_id = ?
+    ORDER BY cl.catch_date DESC, cl.created_at DESC
+    LIMIT 3
+  ");
+  $stmt->execute([$userId]);
+  $fishingStats['recent_catches'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -435,6 +478,67 @@ if (!empty($allUserClubIds)) {
                 <a href="/public/club.php?slug=<?= e($slug) ?>" class="btn btn-outline-primary btn-sm">View Club</a>
               </div>
             <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($fishingStats['total_catches'] > 0 || !empty($allUserClubIds)): ?>
+        <div class="section-card card mb-4">
+          <div class="section-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">My Fishing Stats</h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center mb-4">
+              <div class="col-3">
+                <div class="stat-number"><?= $fishingStats['total_catches'] ?></div>
+                <small class="text-muted">Total Catches</small>
+              </div>
+              <div class="col-3">
+                <div class="stat-number"><?= $fishingStats['personal_bests'] ?></div>
+                <small class="text-muted">Personal Bests</small>
+              </div>
+              <div class="col-3">
+                <div class="stat-number"><?= $fishingStats['club_records'] ?></div>
+                <small class="text-muted">Club Records</small>
+              </div>
+              <div class="col-3">
+                <div class="stat-number"><?= $fishingStats['biggest_catch_kg'] > 0 ? number_format($fishingStats['biggest_catch_kg'], 2) : '-' ?></div>
+                <small class="text-muted">Biggest (kg)</small>
+              </div>
+            </div>
+            
+            <?php if ($fishingStats['biggest_species']): ?>
+              <p class="text-center text-muted mb-3">
+                Biggest catch: <strong><?= e($fishingStats['biggest_species']) ?></strong> at <?= number_format($fishingStats['biggest_catch_kg'], 3) ?> kg
+              </p>
+            <?php endif; ?>
+            
+            <?php if (!empty($fishingStats['recent_catches'])): ?>
+              <h6 class="mt-3 mb-2">Recent Catches</h6>
+              <?php foreach ($fishingStats['recent_catches'] as $catch): ?>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                  <div>
+                    <strong><?= e($catch['species']) ?></strong>
+                    <?php if ($catch['is_personal_best']): ?>
+                      <span class="badge bg-warning text-dark">PB</span>
+                    <?php endif; ?>
+                    <?php if ($catch['is_club_record']): ?>
+                      <span class="badge bg-danger">Record</span>
+                    <?php endif; ?>
+                    <br>
+                    <small class="text-muted">
+                      <?= date('j M Y', strtotime($catch['catch_date'])) ?>
+                      &bull; <a href="/public/catches.php?slug=<?= e($catch['club_slug']) ?>"><?= e($catch['club_name']) ?></a>
+                    </small>
+                  </div>
+                  <?php if ($catch['weight_kg']): ?>
+                    <span class="fw-bold text-primary"><?= number_format((float)$catch['weight_kg'], 3) ?> kg</span>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            <?php elseif (!empty($allUserClubIds)): ?>
+              <p class="text-muted text-center mb-0">No catches logged yet. Visit your club's catch log to start tracking!</p>
+            <?php endif; ?>
           </div>
         </div>
       <?php endif; ?>

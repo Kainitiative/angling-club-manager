@@ -52,13 +52,28 @@ User Roles:
 - Image upload with GD library resizing (logos: 200px max, gallery: 1200px max)
 - Financial management with 12 categories and reporting
 
+## Member Engagement Features
+- **Catch Logging**: Members can log their catches with species, weight, length, location, photos, and notes
+- **Personal Bests Tracking**: Automatic detection and flagging when a catch exceeds previous personal best
+- **Club Records**: Automatic club record tracking per species, displayed on catch log page
+- **Catch of the Month**: Highlights the heaviest catch from the last 30 days on the club page
+- **Competition Seasons/Leagues**: Group competitions into seasons with cumulative standings
+- **Season Leaderboards**: Rankings with points, weights, wins, and podiums
+- **Member Stats Dashboard**: Personal fishing statistics displayed on user dashboard
+
 ## Image Uploads
 Images are processed using PHP's GD library:
 - **Logo uploads**: Resized to max 200x200px, saved as PNG (preserves transparency) or JPEG
 - **Gallery uploads**: Resized to max 1200px wide, saved as optimized JPEG (85% quality)
-- **Validation**: File type (JPEG, PNG, GIF, WebP), max size (5MB logos, 10MB gallery)
-- **Storage**: `uploads/logos/` and `uploads/gallery/` directories
-- **Helper file**: `app/image_upload.php` contains `processLogoUpload()` and `processGalleryUpload()` functions
+- **Catch photos**: Resized to max 800px wide, saved as optimized JPEG (80% quality)
+- **Validation**: File type (JPEG, PNG, GIF, WebP), max size (5MB logos, 10MB gallery/catches)
+- **Storage**: `uploads/logos/`, `uploads/gallery/`, and `uploads/catches/` directories
+- **Helper file**: `app/image_upload.php` contains `processLogoUpload()`, `processGalleryUpload()`, and `processCatchUpload()` functions
+
+## Key Pages
+- `/public/catches.php?slug={club_slug}` - Catch log page for a club
+- `/public/leaderboard.php?season_id={id}` - Season leaderboard
+- `/public/admin/seasons.php?club_id={id}` - Manage competition seasons (admin)
 
 ## Configuration
 For local Laragon development, update `config.local.php`:
@@ -84,6 +99,13 @@ Example migration file:
 ALTER TABLE users ADD COLUMN bio TEXT NULL;
 ALTER TABLE users ADD COLUMN website VARCHAR(255) NULL;
 ```
+
+## Fish Species
+The `fish_species` table contains common Irish fish species categorized as:
+- **Coarse**: Pike, Perch, Bream, Roach, Rudd, Tench, Carp, Eel
+- **Game**: Brown Trout, Rainbow Trout, Salmon, Sea Trout
+- **Sea**: Bass, Pollack, Cod, Mackerel, Wrasse, Ray, Flounder
+- **Other**: For unlisted species
 
 ## Important Notes
 - config.local.php is .gitignored (contains sensitive credentials)

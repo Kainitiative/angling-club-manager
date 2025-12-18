@@ -84,42 +84,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif ($action === 'recalculate_standings') {
     $seasonId = (int)($_POST['season_id'] ?? 0);
     
-    $stmt = $pdo->prepare("DELETE FROM season_standings WHERE season_id = ?");
-    $stmt->execute([$seasonId]);
-    
-    $stmt = $pdo->prepare("
-      SELECT cr.user_id,
-             COUNT(DISTINCT cr.competition_id) as competitions_entered,
-             SUM(CASE WHEN cr.position = 1 THEN 1 ELSE 0 END) as wins,
-             SUM(CASE WHEN cr.position <= 3 THEN 1 ELSE 0 END) as podiums,
-             SUM(cr.total_weight_kg) as total_weight,
-             SUM(cr.points_earned) as total_points
-      FROM competition_results cr
-      JOIN competitions c ON cr.competition_id = c.id
-      WHERE c.season_id = ? AND c.club_id = ?
-      GROUP BY cr.user_id
-    ");
+    $stmt = $pdo->prepare("SELECT * FROM competition_seasons WHERE id = ? AND club_id = ?");
     $stmt->execute([$seasonId, $clubId]);
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $seasonData = $stmt->fetch();
     
-    foreach ($results as $r) {
+    if ($seasonData) {
+      $scoringType = $seasonData['scoring_type'];
+      $bestNCount = (int)$seasonData['best_n_count'];
+      
+      $stmt = $pdo->prepare("DELETE FROM season_standings WHERE season_id = ?");
+      $stmt->execute([$seasonId]);
+      
       $stmt = $pdo->prepare("
-        INSERT INTO season_standings (season_id, user_id, total_points, total_weight_kg, competitions_entered, wins, podiums)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        SELECT cr.user_id, cr.competition_id, cr.position, cr.total_weight_kg, cr.points_earned
+        FROM competition_results cr
+        JOIN competitions c ON cr.competition_id = c.id
+        WHERE c.season_id = ? AND c.club_id = ?
+        ORDER BY cr.user_id, cr.points_earned DESC, cr.total_weight_kg DESC
       ");
-      $stmt->execute([
-        $seasonId,
-        $r['user_id'],
-        $r['total_points'] ?? 0,
-        $r['total_weight'] ?? 0,
-        $r['competitions_entered'],
-        $r['wins'],
-        $r['podiums']
-      ]);
+      $stmt->execute([$seasonId, $clubId]);
+      $allResults = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      
+      $userResults = [];
+      foreach ($allResults as $r) {
+        $uid = $r['user_id'];
+        if (!isset($userResults[$uid])) {
+          $userResults[$uid] = [];
+        }
+        $userResults[$uid][] = $r;
+      }
+      
+      foreach ($userResults as $uid => $results) {
+        $totalPoints = 0;
+        $totalWeight = 0;
+        $competitionsEntered = count($results);
+        $wins = 0;
+        $podiums = 0;
+        
+        if ($scoringType === 'best_n') {
+          usort($results, fn($a, $b) => (float)$b['points_earned'] <=> (float)$a['points_earned']);
+          $bestResults = array_slice($results, 0, $bestNCount);
+          foreach ($bestResults as $r) {
+            $totalPoints += (float)($r['points_earned'] ?? 0);
+            $totalWeight += (float)($r['total_weight_kg'] ?? 0);
+          }
+        } else {
+          foreach ($results as $r) {
+            $totalPoints += (float)($r['points_earned'] ?? 0);
+            $totalWeight += (float)($r['total_weight_kg'] ?? 0);
+          }
+        }
+        
+        foreach ($results as $r) {
+          if ($r['position'] == 1) $wins++;
+          if ($r['position'] <= 3) $podiums++;
+        }
+        
+        $stmt = $pdo->prepare("
+          INSERT INTO season_standings (season_id, user_id, total_points, total_weight_kg, competitions_entered, wins, podiums)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+          $seasonId,
+          $uid,
+          $totalPoints,
+          $totalWeight,
+          $competitionsEntered,
+          $wins,
+          $podiums
+        ]);
+      }
+      
+      $message = 'Standings recalculated';
+      $messageType = 'success';
     }
-    
-    $message = 'Standings recalculated';
-    $messageType = 'success';
   }
 }
 
