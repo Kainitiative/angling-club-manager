@@ -38,6 +38,15 @@ if ($userId) {
   $isAdmin = (bool)$stmt->fetch();
 }
 
+if (!$isMember && !$isAdmin) {
+  if (!$userId) {
+    header('Location: /?redirect=' . urlencode($_SERVER['REQUEST_URI']));
+    exit;
+  }
+  http_response_code(403);
+  exit('Access restricted to club members only.');
+}
+
 $stmt = $pdo->prepare("SELECT * FROM fish_species ORDER BY display_order, name");
 $stmt->execute();
 $fishSpecies = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -145,6 +154,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isMember || $isAdmin)) {
     $stmt->execute([$catchId, $userId]);
     $message = 'Catch removed';
     $messageType = 'info';
+  } elseif ($action === 'set_catch_of_month' && $isAdmin) {
+    $catchId = (int)($_POST['catch_id'] ?? 0);
+    $stmt = $pdo->prepare("UPDATE catch_logs SET is_catch_of_month = 0 WHERE club_id = ?");
+    $stmt->execute([$club['id']]);
+    $stmt = $pdo->prepare("UPDATE catch_logs SET is_catch_of_month = 1 WHERE id = ? AND club_id = ?");
+    $stmt->execute([$catchId, $club['id']]);
+    $message = 'Catch of the Month updated!';
+    $messageType = 'success';
+  } elseif ($action === 'clear_catch_of_month' && $isAdmin) {
+    $stmt = $pdo->prepare("UPDATE catch_logs SET is_catch_of_month = 0 WHERE club_id = ?");
+    $stmt->execute([$club['id']]);
+    $message = 'Catch of the Month cleared';
+    $messageType = 'info';
   }
 }
 
@@ -163,8 +185,8 @@ $stmt = $pdo->prepare("
   SELECT cl.*, u.name as angler_name, u.profile_picture_url
   FROM catch_logs cl
   JOIN users u ON cl.user_id = u.id
-  WHERE cl.club_id = ? AND cl.catch_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-  ORDER BY cl.weight_kg DESC
+  WHERE cl.club_id = ? AND cl.is_catch_of_month = 1
+  ORDER BY cl.catch_date DESC
   LIMIT 1
 ");
 $stmt->execute([$club['id']]);
@@ -245,8 +267,14 @@ if ($userId && ($isMember || $isAdmin)) {
       
       <?php if ($catchOfMonth): ?>
         <div class="card mb-4 border-warning">
-          <div class="card-header bg-warning text-dark">
+          <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Catch of the Month</h5>
+            <?php if ($isAdmin): ?>
+              <form method="post" class="d-inline">
+                <input type="hidden" name="action" value="clear_catch_of_month">
+                <button type="submit" class="btn btn-sm btn-outline-dark">Clear</button>
+              </form>
+            <?php endif; ?>
           </div>
           <div class="card-body">
             <div class="row align-items-center">
@@ -301,14 +329,24 @@ if ($userId && ($isMember || $isAdmin)) {
                           <?php if ($catch['is_club_record']): ?>
                             <span class="badge badge-record">Record</span>
                           <?php endif; ?>
+                          <?php if (!empty($catch['is_catch_of_month'])): ?>
+                            <span class="badge bg-warning text-dark">COTM</span>
+                          <?php endif; ?>
                         </div>
                       </div>
                       <?php if ($catch['weight_kg']): ?>
                         <p class="fs-5 fw-bold text-primary mb-1"><?= number_format((float)$catch['weight_kg'], 3) ?> kg</p>
                       <?php endif; ?>
-                      <p class="small text-muted mb-0">
+                      <p class="small text-muted mb-2">
                         <?= e($catch['angler_name']) ?> &bull; <?= date('j M Y', strtotime($catch['catch_date'])) ?>
                       </p>
+                      <?php if ($isAdmin): ?>
+                        <form method="post" class="d-inline">
+                          <input type="hidden" name="action" value="set_catch_of_month">
+                          <input type="hidden" name="catch_id" value="<?= $catch['id'] ?>">
+                          <button type="submit" class="btn btn-outline-warning btn-sm" title="Set as Catch of the Month">Set COTM</button>
+                        </form>
+                      <?php endif; ?>
                     </div>
                   </div>
                 </div>
