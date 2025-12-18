@@ -48,6 +48,17 @@ User Roles:
 - Membership request system: users can request to join clubs
 - Admin member management: view pending requests, approve/reject, suspend/remove members
 - Membership status display on club pages (pending, active, suspended, expired)
+- Club profile customization with branding, colors, and custom content
+- Image upload with GD library resizing (logos: 200px max, gallery: 1200px max)
+- Financial management with 12 categories and reporting
+
+## Image Uploads
+Images are processed using PHP's GD library:
+- **Logo uploads**: Resized to max 200x200px, saved as PNG (preserves transparency) or JPEG
+- **Gallery uploads**: Resized to max 1200px wide, saved as optimized JPEG (85% quality)
+- **Validation**: File type (JPEG, PNG, GIF, WebP), max size (5MB logos, 10MB gallery)
+- **Storage**: `uploads/logos/` and `uploads/gallery/` directories
+- **Helper file**: `app/image_upload.php` contains `processLogoUpload()` and `processGalleryUpload()` functions
 
 ## Configuration
 For local Laragon development, update `config.local.php`:

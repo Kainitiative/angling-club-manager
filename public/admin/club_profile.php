@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../app/bootstrap.php';
+require_once __DIR__ . '/../../app/image_upload.php';
 
 require_login();
 
@@ -67,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $heroImageUrl = trim($_POST['hero_image_url'] ?? '');
     $primaryColor = $_POST['primary_color'] ?? '#1e3a5f';
     $secondaryColor = $_POST['secondary_color'] ?? '#2d5a87';
-    $logoUrl = trim($_POST['logo_url'] ?? '');
+    $logoUrl = $club['logo_url'] ?? '';
     
     if ($primaryColor && !preg_match('/^#[0-9A-Fa-f]{6}$/', $primaryColor)) {
       $primaryColor = '#1e3a5f';
@@ -78,22 +79,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($heroImageUrl && !preg_match('/^https?:\/\//i', $heroImageUrl)) {
       $heroImageUrl = '';
     }
-    if ($logoUrl && !preg_match('/^https?:\/\//i', $logoUrl)) {
-      $logoUrl = '';
+    
+    if (!empty($_FILES['logo_file']['name']) && $_FILES['logo_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+      try {
+        $uploadDir = __DIR__ . '/../../uploads/logos';
+        $result = processLogoUpload($_FILES['logo_file'], $uploadDir, 200, 85);
+        $logoUrl = $result['url'];
+      } catch (Exception $e) {
+        $message = 'Logo upload failed: ' . $e->getMessage();
+        $messageType = 'danger';
+      }
     }
     
-    $stmt = $pdo->prepare("
-      UPDATE club_profile_settings 
-      SET hero_title = ?, hero_tagline = ?, hero_image_url = ?, primary_color = ?, secondary_color = ?
-      WHERE club_id = ?
-    ");
-    $stmt->execute([$heroTitle ?: null, $heroTagline ?: null, $heroImageUrl ?: null, $primaryColor, $secondaryColor, $clubId]);
-    
-    $stmt = $pdo->prepare("UPDATE clubs SET logo_url = ? WHERE id = ?");
-    $stmt->execute([$logoUrl ?: null, $clubId]);
-    
-    $message = 'Branding settings saved.';
-    $messageType = 'success';
+    if (!$message) {
+      $stmt = $pdo->prepare("
+        UPDATE club_profile_settings 
+        SET hero_title = ?, hero_tagline = ?, hero_image_url = ?, primary_color = ?, secondary_color = ?
+        WHERE club_id = ?
+      ");
+      $stmt->execute([$heroTitle ?: null, $heroTagline ?: null, $heroImageUrl ?: null, $primaryColor, $secondaryColor, $clubId]);
+      
+      $stmt = $pdo->prepare("UPDATE clubs SET logo_url = ? WHERE id = ?");
+      $stmt->execute([$logoUrl ?: null, $clubId]);
+      
+      $message = 'Branding settings saved.';
+      $messageType = 'success';
+    }
     $tab = 'branding';
     
   } elseif ($action === 'save_content') {
@@ -185,13 +196,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tab = 'fees';
     
   } elseif ($action === 'add_gallery') {
-    $imageUrl = trim($_POST['image_url'] ?? '');
     $caption = trim($_POST['caption'] ?? '');
+    $imageUrl = '';
     
-    if ($imageUrl && !preg_match('/^https?:\/\//i', $imageUrl)) {
-      $message = 'Please enter a valid URL starting with http:// or https://';
-      $messageType = 'danger';
-      $imageUrl = '';
+    if (!empty($_FILES['gallery_file']['name']) && $_FILES['gallery_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+      try {
+        $uploadDir = __DIR__ . '/../../uploads/gallery';
+        $result = processGalleryUpload($_FILES['gallery_file'], $uploadDir, 1200, 85);
+        $imageUrl = $result['url'];
+      } catch (Exception $e) {
+        $message = 'Image upload failed: ' . $e->getMessage();
+        $messageType = 'danger';
+      }
     }
     
     if ($imageUrl) {
@@ -327,15 +343,21 @@ $billingPeriodLabels = [
         <h5 class="mb-0">Branding & Colors</h5>
       </div>
       <div class="card-body">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
           <input type="hidden" name="action" value="save_branding">
           
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                <label for="logo_url" class="form-label">Club Logo URL</label>
-                <input type="url" class="form-control" id="logo_url" name="logo_url" value="<?= e($club['logo_url'] ?? '') ?>" placeholder="https://example.com/logo.png">
-                <div class="form-text">Enter a URL to your club logo image</div>
+                <label for="logo_file" class="form-label">Club Logo</label>
+                <?php if ($club['logo_url']): ?>
+                  <div class="mb-2">
+                    <img src="<?= e($club['logo_url']) ?>" alt="Current logo" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 1px solid #dee2e6;">
+                    <span class="text-muted ms-2">Current logo</span>
+                  </div>
+                <?php endif; ?>
+                <input type="file" class="form-control" id="logo_file" name="logo_file" accept="image/jpeg,image/png,image/gif,image/webp">
+                <div class="form-text">Upload an image (max 5MB). Will be resized to 200x200px.</div>
               </div>
               
               <div class="mb-3">
@@ -576,13 +598,13 @@ $billingPeriodLabels = [
             <h5 class="mb-0">Add Photo</h5>
           </div>
           <div class="card-body">
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
               <input type="hidden" name="action" value="add_gallery">
               
               <div class="mb-3">
-                <label for="image_url" class="form-label">Image URL <span class="text-danger">*</span></label>
-                <input type="url" class="form-control" id="image_url" name="image_url" required placeholder="https://example.com/photo.jpg">
-                <div class="form-text">Enter the URL of your image</div>
+                <label for="gallery_file" class="form-label">Upload Image <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" id="gallery_file" name="gallery_file" required accept="image/jpeg,image/png,image/gif,image/webp">
+                <div class="form-text">Max 10MB. Will be resized to max 1200px wide.</div>
               </div>
               
               <div class="mb-3">
