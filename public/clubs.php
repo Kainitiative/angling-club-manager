@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/bootstrap.php';
 
+require_login();
+
 $userId = current_user_id();
-$isLoggedIn = (bool)$userId;
+$isLoggedIn = true;
 
 $userCountry = '';
 $userTown = '';

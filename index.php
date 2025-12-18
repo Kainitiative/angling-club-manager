@@ -29,28 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-// Fetch public clubs to display on landing page
-$stmt = $pdo->query("
-  SELECT c.id, c.name, c.slug, c.about_text, c.location_text, c.city, c.logo_url,
-         (SELECT COUNT(*) FROM club_admins ca WHERE ca.club_id = c.id) as admin_count
-  FROM clubs c
-  WHERE c.is_public = 1
-  ORDER BY c.created_at DESC
-  LIMIT 12
-");
-$publicClubs = $stmt->fetchAll();
-
-// Fetch upcoming open competitions
-$stmt = $pdo->query("
-  SELECT comp.*, c.name as club_name, c.slug as club_slug
-  FROM competitions comp
-  JOIN clubs c ON comp.club_id = c.id
-  WHERE comp.visibility = 'open'
-    AND comp.competition_date >= CURDATE()
-  ORDER BY comp.competition_date ASC
-  LIMIT 6
-");
-$upcomingCompetitions = $stmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -159,101 +137,46 @@ $upcomingCompetitions = $stmt->fetchAll();
   </div>
 </section>
 
-<section id="clubs-section" class="py-5">
+<section class="py-5">
   <div class="container">
-    <h2 class="text-center mb-2">Discover Angling Clubs</h2>
-    <p class="text-center text-muted mb-5">Find and join fishing clubs in your area</p>
-    
-    <?php if (empty($publicClubs)): ?>
-      <div class="text-center py-5">
-        <p class="text-muted mb-3">No public clubs yet. Be the first to create one!</p>
-        <a href="/public/auth/register.php" class="btn btn-primary">Create Your Club</a>
-      </div>
-    <?php else: ?>
-      <div class="row g-4">
-        <?php foreach ($publicClubs as $club): ?>
-          <div class="col-md-6 col-lg-4">
-            <div class="card club-card h-100">
-              <div class="card-body">
-                <div class="d-flex align-items-start mb-3">
-                  <?php if ($club['logo_url']): ?>
-                    <img src="<?= e($club['logo_url']) ?>" alt="<?= e($club['name']) ?>" class="club-logo me-3">
-                  <?php else: ?>
-                    <div class="club-logo-placeholder me-3">
-                      <?= strtoupper(substr($club['name'], 0, 1)) ?>
-                    </div>
-                  <?php endif; ?>
-                  <div>
-                    <h5 class="card-title mb-1"><?= e($club['name']) ?></h5>
-                    <?php if ($club['city'] || $club['location_text']): ?>
-                      <small class="text-muted">
-                        📍 <?= e($club['city'] ?: $club['location_text']) ?>
-                      </small>
-                    <?php endif; ?>
-                  </div>
-                </div>
-                <?php if ($club['about_text']): ?>
-                  <p class="card-text text-muted small">
-                    <?= e(substr($club['about_text'], 0, 120)) ?><?= strlen($club['about_text']) > 120 ? '...' : '' ?>
-                  </p>
-                <?php endif; ?>
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h2 class="mb-4">Join Our Community</h2>
+        <p class="lead text-muted mb-4">Register for free to discover angling clubs, browse upcoming competitions, and connect with fellow anglers in your area.</p>
+        <div class="row g-4 mb-4">
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light">
+              <div class="card-body text-center">
+                <div class="display-4 mb-2">🎣</div>
+                <h5>Find Clubs</h5>
+                <p class="text-muted small mb-0">Discover local angling clubs and join communities that match your fishing style.</p>
               </div>
             </div>
           </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </div>
-</section>
-
-<?php if (!empty($upcomingCompetitions)): ?>
-<section id="competitions-section" class="py-5 bg-light">
-  <div class="container">
-    <h2 class="text-center mb-2">Upcoming Competitions</h2>
-    <p class="text-center text-muted mb-5">Open fishing competitions you can join</p>
-    
-    <div class="row g-4">
-      <?php foreach ($upcomingCompetitions as $comp): ?>
-        <div class="col-md-6 col-lg-4">
-          <div class="card club-card h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-start mb-3">
-                <div class="club-logo-placeholder me-3">
-                  🏆
-                </div>
-                <div>
-                  <h5 class="card-title mb-1"><?= e($comp['title']) ?></h5>
-                  <?php if ($comp['town'] || $comp['country']): ?>
-                    <small class="text-muted">
-                      📍 <?= e($comp['town'] ?: '') ?><?= ($comp['town'] && $comp['country']) ? ', ' : '' ?><?= e($comp['country'] ?: '') ?>
-                    </small>
-                  <?php endif; ?>
-                </div>
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light">
+              <div class="card-body text-center">
+                <div class="display-4 mb-2">🏆</div>
+                <h5>Competitions</h5>
+                <p class="text-muted small mb-0">Browse and enter fishing competitions hosted by clubs near you.</p>
               </div>
-              <p class="card-text small mb-2">
-                <strong>📅 <?= date('D, j M Y', strtotime($comp['competition_date'])) ?></strong>
-                <?php if ($comp['start_time']): ?>
-                  at <?= date('g:i A', strtotime($comp['start_time'])) ?>
-                <?php endif; ?>
-              </p>
-              <p class="card-text text-muted small mb-2">
-                🎣 <?= e($comp['venue_name']) ?>
-              </p>
-              <p class="card-text text-muted small mb-0">
-                Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
-              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light">
+              <div class="card-body text-center">
+                <div class="display-4 mb-2">📊</div>
+                <h5>Track Results</h5>
+                <p class="text-muted small mb-0">View competition results and see how you stack up against other anglers.</p>
+              </div>
             </div>
           </div>
         </div>
-      <?php endforeach; ?>
-    </div>
-    
-    <div class="text-center mt-4">
-      <a href="/public/competitions.php" class="btn btn-primary">Browse All Competitions</a>
+        <a href="/public/auth/register.php" class="btn btn-primary btn-lg">Create Free Account</a>
+      </div>
     </div>
   </div>
 </section>
-<?php endif; ?>
 
 <footer class="bg-dark text-white py-4">
   <div class="container text-center">
