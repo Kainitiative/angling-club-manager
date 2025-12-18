@@ -114,7 +114,7 @@ $upcomingCompetitions = $stmt->fetchAll();
   <div class="container">
     <a class="navbar-brand fw-bold" href="/">Angling Club Manager</a>
     <div class="ms-auto">
-      <a class="btn btn-outline-light btn-sm me-2" href="#login-section">Log In</a>
+      <a class="btn btn-outline-light btn-sm me-2" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Log In</a>
       <a class="btn btn-primary btn-sm" href="/public/auth/register.php">Sign Up</a>
     </div>
   </div>
@@ -255,47 +255,55 @@ $upcomingCompetitions = $stmt->fetchAll();
 </section>
 <?php endif; ?>
 
-<section id="login-section" class="py-5">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-          <div class="card-body p-4">
-            <h2 class="card-title text-center mb-4">Log In</h2>
-
-            <?php if ($errors): ?>
-              <div class="alert alert-danger">
-                <?= e($errors[0]) ?>
-              </div>
-            <?php endif; ?>
-
-            <form method="post" action="/">
-              <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input type="email" name="email" class="form-control" value="<?= e($email) ?>" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Password</label>
-                <input type="password" name="password" class="form-control" required>
-              </div>
-              <button type="submit" class="btn btn-primary w-100">Log In</button>
-            </form>
-
-            <p class="text-center mt-3 mb-0">
-              New here? <a href="/public/auth/register.php">Create an account</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <footer class="bg-dark text-white py-4">
   <div class="container text-center">
     <p class="mb-0">Angling Club Manager</p>
   </div>
 </footer>
 
+<div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="loginModalLabel">Log In</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <?php if ($errors): ?>
+          <div class="alert alert-danger">
+            <?= e($errors[0]) ?>
+          </div>
+        <?php endif; ?>
+
+        <form method="post" action="/">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="<?= e($email) ?>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Log In</button>
+        </form>
+
+        <p class="text-center mt-3 mb-0">
+          New here? <a href="/public/auth/register.php">Create an account</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?php if ($errors): ?>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+    loginModal.show();
+  });
+</script>
+<?php endif; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
