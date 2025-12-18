@@ -297,7 +297,8 @@ $committeeRoleLabels = [
       <div class="col-auto">
         <?php if ($isAdmin): ?>
           <span class="badge bg-warning text-dark fs-6 p-2">Admin</span>
-          <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Manage Members</a>
+          <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Members</a>
+          <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
         <?php elseif ($isMember): ?>
           <span class="badge bg-success fs-6 p-2">Member</span>
         <?php elseif ($membershipStatus === 'pending'): ?>
