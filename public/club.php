@@ -35,12 +35,15 @@ if ($userId) {
   $adminRow = $stmt->fetch();
   $isAdmin = (bool)$adminRow;
   
-  $stmt = $pdo->prepare("SELECT membership_status FROM club_members WHERE club_id = ? AND user_id = ?");
+  $stmt = $pdo->prepare("SELECT membership_status, committee_role FROM club_members WHERE club_id = ? AND user_id = ?");
   $stmt->execute([$club['id'], $userId]);
   $memberRow = $stmt->fetch();
   if ($memberRow) {
     $membershipStatus = $memberRow['membership_status'];
     $isMember = ($membershipStatus === 'active');
+    $userCommitteeRole = $memberRow['committee_role'] ?? 'member';
+  } else {
+    $userCommitteeRole = 'member';
   }
 }
 
@@ -300,7 +303,14 @@ $committeeRoleLabels = [
           <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Members</a>
           <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
         <?php elseif ($isMember): ?>
+          <?php
+            $committeeRolesForFinances = ['chairperson', 'secretary', 'treasurer', 'pro', 'safety_officer', 'child_liaison_officer'];
+            $canViewFinances = in_array($userCommitteeRole ?? 'member', $committeeRolesForFinances);
+          ?>
           <span class="badge bg-success fs-6 p-2">Member</span>
+          <?php if ($canViewFinances): ?>
+            <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Finances</a>
+          <?php endif; ?>
         <?php elseif ($membershipStatus === 'pending'): ?>
           <span class="badge bg-info fs-6 p-2">Request Pending</span>
         <?php endif; ?>

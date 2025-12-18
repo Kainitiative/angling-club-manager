@@ -27,13 +27,23 @@ if (!$club) {
 $stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
 $stmt->execute([$clubId, $userId]);
 $adminRow = $stmt->fetch();
+$isAdmin = (bool)$adminRow;
 
-if (!$adminRow) {
+$stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
+$stmt->execute([$clubId, $userId]);
+$memberRow = $stmt->fetch();
+$committeeRole = $memberRow['committee_role'] ?? 'member';
+
+$committeeRolesAllowedToView = ['chairperson', 'secretary', 'treasurer', 'pro', 'safety_officer', 'child_liaison_officer'];
+$canView = $isAdmin || in_array($committeeRole, $committeeRolesAllowedToView);
+$canEdit = $isAdmin || in_array($committeeRole, ['chairperson', 'treasurer']);
+
+if (!$canView) {
   http_response_code(403);
-  exit('You are not an admin of this club');
+  exit('Access denied. Only committee members can view club finances.');
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
   $action = $_POST['action'] ?? '';
   
   if ($action === 'add') {
@@ -186,6 +196,7 @@ $balance = $totalIncome - $totalExpense;
   </div>
 
   <div class="row">
+    <?php if ($canEdit): ?>
     <div class="col-lg-4 mb-4">
       <div class="card">
         <div class="card-header bg-white">
@@ -230,8 +241,9 @@ $balance = $totalIncome - $totalExpense;
         </div>
       </div>
     </div>
+    <?php endif; ?>
     
-    <div class="col-lg-8">
+    <div class="<?= $canEdit ? 'col-lg-8' : 'col-12' ?>">
       <div class="card">
         <div class="card-header bg-white">
           <h5 class="mb-0">Transaction History</h5>
@@ -267,11 +279,13 @@ $balance = $totalIncome - $totalExpense;
                       <div class="fs-5 fw-bold <?= $entry['entry_type'] === 'income' ? 'text-success' : 'text-danger' ?>">
                         <?= $entry['entry_type'] === 'income' ? '+' : '-' ?>&euro;<?= number_format((float)$entry['amount'], 2) ?>
                       </div>
+                      <?php if ($canEdit): ?>
                       <form method="post" class="d-inline" onsubmit="return confirm('Delete this entry?');">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="entry_id" value="<?= $entry['id'] ?>">
                         <button type="submit" class="btn btn-link btn-sm text-danger p-0">Delete</button>
                       </form>
+                      <?php endif; ?>
                     </div>
                   </div>
                 </div>
