@@ -413,6 +413,9 @@ $billingPeriodLabels = [
         <?php endif; ?>
       </div>
       <div class="col-auto">
+        <?php 
+          $canEditProfile = $isAdmin || in_array($userCommitteeRole, ['chairperson', 'pro']);
+        ?>
         <?php if ($isAdmin): ?>
           <span class="badge bg-warning text-dark fs-6 p-2">Admin</span>
           <a href="/public/admin/club_profile.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Edit Profile</a>
@@ -424,8 +427,11 @@ $billingPeriodLabels = [
             $canViewFinances = in_array($userCommitteeRole ?? 'member', $committeeRolesForFinances);
           ?>
           <span class="badge bg-success fs-6 p-2">Member</span>
+          <?php if ($canEditProfile): ?>
+            <a href="/public/admin/club_profile.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Edit Profile</a>
+          <?php endif; ?>
           <?php if ($canViewFinances): ?>
-            <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Finances</a>
+            <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
           <?php endif; ?>
         <?php elseif ($membershipStatus === 'pending'): ?>
           <span class="badge bg-info fs-6 p-2">Request Pending</span>

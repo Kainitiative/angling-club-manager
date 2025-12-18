@@ -30,9 +30,16 @@ $stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND 
 $stmt->execute([$clubId, $userId]);
 $adminRow = $stmt->fetch();
 
-if (!$adminRow) {
+$stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
+$stmt->execute([$clubId, $userId]);
+$memberRow = $stmt->fetch();
+$committeeRole = $memberRow['committee_role'] ?? null;
+
+$canEditProfile = $adminRow || in_array($committeeRole, ['chairperson', 'pro']);
+
+if (!$canEditProfile) {
   http_response_code(403);
-  exit('You are not an admin of this club');
+  exit('You do not have permission to edit this club profile');
 }
 
 $stmt = $pdo->prepare("SELECT * FROM club_profile_settings WHERE club_id = ?");
