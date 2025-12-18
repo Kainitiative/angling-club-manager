@@ -30,9 +30,3 @@ CREATE TABLE IF NOT EXISTS competitions (
   CONSTRAINT fk_competitions_club FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
   CONSTRAINT fk_competitions_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE INDEX idx_competitions_club ON competitions(club_id);
-CREATE INDEX idx_competitions_date ON competitions(competition_date);
-CREATE INDEX idx_competitions_country ON competitions(country);
-CREATE INDEX idx_competitions_visibility ON competitions(visibility);
-CREATE INDEX idx_competitions_coords ON competitions(latitude, longitude);

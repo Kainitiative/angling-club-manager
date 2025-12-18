@@ -1,5 +1,4 @@
--- Add committee_role column to club_members table
--- Roles: member (default), chairperson, secretary, treasurer, pro, safety_officer, child_liaison_officer
--- Note: If column already exists, this will error - that's OK, just means it's already added
-
-ALTER TABLE club_members ADD COLUMN committee_role VARCHAR(50) DEFAULT 'member';
+-- Add committee_role column to club_members table if it doesn't exist
+-- This migration is now handled in 001_add_club_members_table.sql
+-- Keeping this file empty to prevent migration errors
+SELECT 1;
