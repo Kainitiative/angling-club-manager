@@ -130,6 +130,29 @@ if ($canSeePrivate) {
 }
 $stmt->execute([$club['id']]);
 $clubCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch past competitions with results
+if ($canSeePrivate) {
+  $stmt = $pdo->prepare("
+    SELECT c.*, 
+           (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
+    FROM competitions c
+    WHERE c.club_id = ? AND c.competition_date < CURDATE()
+    ORDER BY c.competition_date DESC
+    LIMIT 10
+  ");
+} else {
+  $stmt = $pdo->prepare("
+    SELECT c.*, 
+           (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
+    FROM competitions c
+    WHERE c.club_id = ? AND c.competition_date < CURDATE() AND c.visibility = 'open'
+    ORDER BY c.competition_date DESC
+    LIMIT 10
+  ");
+}
+$stmt->execute([$club['id']]);
+$pastCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">
@@ -324,6 +347,50 @@ $clubCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
           <div class="card-body text-center py-4">
             <p class="text-muted mb-2">No upcoming competitions</p>
             <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-primary btn-sm">Add Competition</a>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($pastCompetitions)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Past Competitions & Results</h5>
+          </div>
+          <div class="card-body">
+            <div class="list-group list-group-flush">
+              <?php foreach ($pastCompetitions as $comp): ?>
+                <div class="list-group-item px-0">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1">
+                        <?= e($comp['title']) ?>
+                        <?php if ($comp['visibility'] === 'private'): ?>
+                          <span class="badge bg-secondary">Members Only</span>
+                        <?php endif; ?>
+                      </h6>
+                      <div class="small text-muted">
+                        <?= e($comp['venue_name']) ?>
+                        &bull; <?= date('j M Y', strtotime($comp['competition_date'])) ?>
+                      </div>
+                      <?php if ($comp['result_count'] > 0): ?>
+                        <div class="small text-success mt-1">
+                          <?= $comp['result_count'] ?> result<?= $comp['result_count'] > 1 ? 's' : '' ?> recorded
+                        </div>
+                      <?php else: ?>
+                        <div class="small text-muted mt-1">No results yet</div>
+                      <?php endif; ?>
+                    </div>
+                    <div>
+                      <?php if ($comp['result_count'] > 0): ?>
+                        <a href="/public/competition_results.php?id=<?= $comp['id'] ?>" class="btn btn-success btn-sm">
+                          View Results
+                        </a>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
           </div>
         </div>
       <?php endif; ?>
