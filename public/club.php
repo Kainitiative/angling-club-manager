@@ -578,6 +578,17 @@ $billingPeriodLabels = [
         </div>
       <?php endif; ?>
 
+      <div class="card mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Catch Log</h5>
+          <a href="/public/catches.php?slug=<?= e($club['slug']) ?>" class="btn btn-outline-primary btn-sm">View All Catches</a>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-2">Members can log their catches, track personal bests, and compete for club records.</p>
+          <a href="/public/catches.php?slug=<?= e($club['slug']) ?>" class="btn btn-primary">Go to Catch Log</a>
+        </div>
+      </div>
+
       <?php if (!empty($clubCompetitions)): ?>
         <div class="card mb-4">
           <div class="card-header bg-white d-flex justify-content-between align-items-center">

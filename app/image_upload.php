@@ -117,6 +117,87 @@ function processLogoUpload(array $file, string $uploadDir, int $maxSize = 200, i
     ];
 }
 
+function processCatchUpload(array $file, string $uploadDir, int $maxWidth = 800, int $quality = 80): array {
+    $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $maxFileSize = 10 * 1024 * 1024;
+    
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        throw new Exception('Upload error');
+    }
+    
+    if ($file['size'] > $maxFileSize) {
+        throw new Exception('File too large (max 10MB)');
+    }
+    
+    $imageInfo = @getimagesize($file['tmp_name']);
+    if ($imageInfo === false) {
+        throw new Exception('Invalid image file');
+    }
+    
+    $mime = $imageInfo['mime'];
+    if (!in_array($mime, $allowedMimes)) {
+        throw new Exception('Invalid file type');
+    }
+    
+    $width = $imageInfo[0];
+    $height = $imageInfo[1];
+    $type = $imageInfo[2];
+    
+    if ($width > $maxWidth) {
+        $newWidth = $maxWidth;
+        $newHeight = (int)(($maxWidth / $width) * $height);
+    } else {
+        $newWidth = $width;
+        $newHeight = $height;
+    }
+    
+    $newImage = imagecreatetruecolor($newWidth, $newHeight);
+    
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $sourceImage = imagecreatefromjpeg($file['tmp_name']);
+            break;
+        case IMAGETYPE_PNG:
+            $sourceImage = imagecreatefrompng($file['tmp_name']);
+            break;
+        case IMAGETYPE_GIF:
+            $sourceImage = imagecreatefromgif($file['tmp_name']);
+            break;
+        case IMAGETYPE_WEBP:
+            $sourceImage = imagecreatefromwebp($file['tmp_name']);
+            break;
+        default:
+            throw new Exception('Unsupported type');
+    }
+    
+    imagecopyresampled(
+        $newImage, $sourceImage,
+        0, 0, 0, 0,
+        $newWidth, $newHeight,
+        $width, $height
+    );
+    
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    $fileName = 'catch_' . uniqid() . '.jpg';
+    $destination = $uploadDir . '/' . $fileName;
+    
+    imagejpeg($newImage, $destination, $quality);
+    
+    imagedestroy($newImage);
+    imagedestroy($sourceImage);
+    
+    return [
+        'filename' => $fileName,
+        'path' => $destination,
+        'url' => '/uploads/catches/' . $fileName,
+        'width' => $newWidth,
+        'height' => $newHeight
+    ];
+}
+
 function processGalleryUpload(array $file, string $uploadDir, int $maxWidth = 1200, int $quality = 85): array {
     $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     $maxFileSize = 10 * 1024 * 1024;
