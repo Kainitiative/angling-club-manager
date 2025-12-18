@@ -1,0 +1,37 @@
+C:\laragon\www\angling-club-manager(main -> origin)
+λ mysql -u root -p angling_club_manager -e "SHOW CREATE TABLE competitions\G"
+Enter password:
+*************************** 1. row ***************************
+       Table: competitions
+Create Table: CREATE TABLE `competitions` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `club_id` bigint unsigned NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `venue_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `competition_date` date NOT NULL,
+  `start_time` time DEFAULT NULL,
+  `address_line1` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_line2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `town` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `county` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postcode` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'United Kingdom',
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  `visibility` enum('open','private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `created_by` bigint unsigned NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_competitions_user` (`created_by`),
+  KEY `idx_competitions_club` (`club_id`),
+  KEY `idx_competitions_date` (`competition_date`),
+  KEY `idx_competitions_country` (`country`),
+  KEY `idx_competitions_visibility` (`visibility`),
+  KEY `idx_competitions_coords` (`latitude`,`longitude`),
+  CONSTRAINT `fk_competitions_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_competitions_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+
+C:\laragon\www\angling-club-manager(main -> origin)

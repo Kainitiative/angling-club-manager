@@ -2,8 +2,8 @@
 -- Run this migration after 002_add_competitions_table.sql
 
 CREATE TABLE IF NOT EXISTS competition_results (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  competition_id INT UNSIGNED NOT NULL,
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  competition_id BIGINT UNSIGNED NOT NULL,
   competitor_name VARCHAR(190) NOT NULL,
   fish_count INT UNSIGNED NOT NULL DEFAULT 0,
   total_weight DECIMAL(8,2) NOT NULL DEFAULT 0.00,
