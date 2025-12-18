@@ -179,6 +179,33 @@ if ($canSeePrivate) {
 }
 $stmt->execute([$club['id']]);
 $pastCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->prepare("
+  SELECT cm.committee_role, u.name, u.profile_picture_url
+  FROM club_members cm
+  JOIN users u ON cm.user_id = u.id
+  WHERE cm.club_id = ? AND cm.membership_status = 'active' AND cm.committee_role != 'member'
+  ORDER BY 
+    CASE cm.committee_role
+      WHEN 'chairperson' THEN 1
+      WHEN 'secretary' THEN 2
+      WHEN 'treasurer' THEN 3
+      WHEN 'pro' THEN 4
+      WHEN 'safety_officer' THEN 5
+      WHEN 'child_liaison_officer' THEN 6
+    END
+");
+$stmt->execute([$club['id']]);
+$committeeMembers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$committeeRoleLabels = [
+  'chairperson' => 'Chairperson',
+  'secretary' => 'Secretary',
+  'treasurer' => 'Treasurer',
+  'pro' => 'PRO',
+  'safety_officer' => 'Safety Officer',
+  'child_liaison_officer' => 'Child Liaison Officer',
+];
 ?>
 <!doctype html>
 <html lang="en">
@@ -315,6 +342,32 @@ $pastCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?= e($fishingStyleLabels[$style] ?? ucfirst($style)) ?>
               </span>
             <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($committeeMembers)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Club Committee</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <?php foreach ($committeeMembers as $cm): ?>
+                <?php 
+                  $cmAvatar = $cm['profile_picture_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($cm['name']) . '&size=50&background=1e3a5f&color=fff';
+                ?>
+                <div class="col-md-6">
+                  <div class="d-flex align-items-center p-2 bg-light rounded">
+                    <img src="<?= e($cmAvatar) ?>" alt="" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                    <div>
+                      <div class="fw-semibold"><?= e($cm['name']) ?></div>
+                      <small class="text-primary"><?= e($committeeRoleLabels[$cm['committee_role']] ?? ucfirst($cm['committee_role'])) ?></small>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
           </div>
         </div>
       <?php endif; ?>

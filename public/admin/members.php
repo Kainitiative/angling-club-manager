@@ -35,6 +35,16 @@ if (!$adminRow) {
 
 $adminRole = $adminRow['admin_role'];
 
+$committeeRoles = [
+  'member' => 'Member',
+  'chairperson' => 'Chairperson',
+  'secretary' => 'Secretary',
+  'treasurer' => 'Treasurer',
+  'pro' => 'PRO',
+  'safety_officer' => 'Safety Officer',
+  'child_liaison_officer' => 'Child Liaison Officer',
+];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['member_id'])) {
   $memberId = (int)$_POST['member_id'];
   $action = $_POST['action'];
@@ -69,6 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
       $stmt->execute([$memberId]);
       $message = "Removed {$member['name']} from the club.";
       $messageType = 'info';
+    } elseif ($action === 'set_role') {
+      $newRole = $_POST['committee_role'] ?? 'member';
+      if (array_key_exists($newRole, $committeeRoles)) {
+        $stmt = $pdo->prepare("UPDATE club_members SET committee_role = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$newRole, $memberId]);
+        $message = "Updated role for {$member['name']} to {$committeeRoles[$newRole]}.";
+        $messageType = 'success';
+      }
     }
   }
 }
@@ -85,6 +103,15 @@ $stmt = $pdo->prepare("
       WHEN 'suspended' THEN 3 
       WHEN 'expired' THEN 4 
     END,
+    CASE cm.committee_role
+      WHEN 'chairperson' THEN 1
+      WHEN 'secretary' THEN 2
+      WHEN 'treasurer' THEN 3
+      WHEN 'pro' THEN 4
+      WHEN 'safety_officer' THEN 5
+      WHEN 'child_liaison_officer' THEN 6
+      ELSE 10
+    END,
     cm.created_at DESC
 ");
 $stmt->execute([$clubId]);
@@ -96,6 +123,16 @@ foreach ($members as $m) {
   if ($m['membership_status'] === 'pending') $pendingCount++;
   if ($m['membership_status'] === 'active') $activeCount++;
 }
+
+$roleBadgeColors = [
+  'chairperson' => 'bg-primary',
+  'secretary' => 'bg-info',
+  'treasurer' => 'bg-success',
+  'pro' => 'bg-warning text-dark',
+  'safety_officer' => 'bg-danger',
+  'child_liaison_officer' => 'bg-secondary',
+  'member' => 'bg-light text-dark',
+];
 ?>
 <!doctype html>
 <html lang="en">
@@ -128,6 +165,13 @@ foreach ($members as $m) {
       height: 60px;
       border-radius: 50%;
       object-fit: cover;
+    }
+    .role-select {
+      max-width: 200px;
+    }
+    .committee-badge {
+      font-size: 0.75rem;
+      padding: 4px 8px;
     }
   </style>
 </head>
@@ -233,6 +277,8 @@ foreach ($members as $m) {
           $avatar = $member['profile_picture_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($member['name']) . '&size=60&background=6c757d&color=fff';
           $location = array_filter([$member['town'], $member['city'], $member['country']]);
           $statusClass = $member['membership_status'];
+          $currentRole = $member['committee_role'] ?? 'member';
+          $roleBadgeColor = $roleBadgeColors[$currentRole] ?? 'bg-light text-dark';
         ?>
         <div class="card member-card <?= $statusClass ?> mb-3">
           <div class="card-body">
@@ -250,6 +296,9 @@ foreach ($members as $m) {
                   <?php elseif ($member['membership_status'] === 'expired'): ?>
                     <span class="badge bg-secondary">Expired</span>
                   <?php endif; ?>
+                  <?php if ($currentRole !== 'member'): ?>
+                    <span class="badge committee-badge <?= $roleBadgeColor ?>"><?= e($committeeRoles[$currentRole]) ?></span>
+                  <?php endif; ?>
                 </h5>
                 <div class="text-muted small">
                   <?= e($member['email']) ?>
@@ -266,23 +315,37 @@ foreach ($members as $m) {
               </div>
               <div class="col-auto">
                 <?php if ($member['membership_status'] === 'active'): ?>
-                  <form method="post" class="d-inline">
+                  <form method="post" class="d-flex align-items-center gap-2 mb-2">
                     <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="action" value="suspend">
-                    <button type="submit" class="btn btn-outline-warning btn-sm">Suspend</button>
-                  </form>
-                <?php elseif ($member['membership_status'] === 'suspended'): ?>
-                  <form method="post" class="d-inline">
-                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="action" value="activate">
-                    <button type="submit" class="btn btn-success btn-sm">Reactivate</button>
+                    <input type="hidden" name="action" value="set_role">
+                    <select name="committee_role" class="form-select form-select-sm role-select">
+                      <?php foreach ($committeeRoles as $roleKey => $roleLabel): ?>
+                        <option value="<?= $roleKey ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= $roleLabel ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Set Role</button>
                   </form>
                 <?php endif; ?>
-                <form method="post" class="d-inline" onsubmit="return confirm('Remove this member from the club?');">
-                  <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                  <input type="hidden" name="action" value="remove">
-                  <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
-                </form>
+                <div class="d-flex gap-1">
+                  <?php if ($member['membership_status'] === 'active'): ?>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                      <input type="hidden" name="action" value="suspend">
+                      <button type="submit" class="btn btn-outline-warning btn-sm">Suspend</button>
+                    </form>
+                  <?php elseif ($member['membership_status'] === 'suspended'): ?>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                      <input type="hidden" name="action" value="activate">
+                      <button type="submit" class="btn btn-success btn-sm">Reactivate</button>
+                    </form>
+                  <?php endif; ?>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Remove this member from the club?');">
+                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                    <input type="hidden" name="action" value="remove">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
