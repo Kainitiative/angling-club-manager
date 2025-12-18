@@ -127,7 +127,7 @@ $upcomingCompetitions = $stmt->fetchAll();
         <h1 class="display-4 fw-bold mb-3">Manage Your Fishing Club With Ease</h1>
         <p class="lead mb-4">The complete platform for angling clubs. Manage members, organize competitions, schedule meetings, and grow your community.</p>
         <a href="/public/auth/register.php" class="btn btn-light btn-lg me-2">Get Started Free</a>
-        <a href="#clubs-section" class="btn btn-outline-light btn-lg">Browse Clubs</a>
+        <a href="/public/clubs.php" class="btn btn-outline-light btn-lg">Browse Clubs</a>
       </div>
       <div class="col-lg-5 d-none d-lg-block text-center">
         <div class="display-1">🎣</div>
