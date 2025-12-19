@@ -46,7 +46,11 @@ if ($selectedClubId) {
 $message = '';
 $messageType = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId) {
+if (!$selectedClub && $selectedClubId) {
+  $selectedClubId = 0;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId && $selectedClub) {
   $action = $_POST['action'] ?? '';
   
   if ($action === 'send_message') {
@@ -59,6 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId) {
     if ($subject === '') $errors[] = 'Subject is required.';
     if ($body === '') $errors[] = 'Message body is required.';
     if (!$isAnnouncement && $recipientId === '') $errors[] = 'Please select a recipient.';
+    
+    if (!$isAnnouncement && $recipientId !== '') {
+      $stmt = $pdo->prepare("
+        SELECT 1 FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'
+        UNION
+        SELECT 1 FROM club_admins WHERE club_id = ? AND user_id = ?
+      ");
+      $stmt->execute([$selectedClubId, (int)$recipientId, $selectedClubId, (int)$recipientId]);
+      if (!$stmt->fetch()) {
+        $errors[] = 'Invalid recipient.';
+      }
+    }
     
     if (!$errors) {
       $stmt = $pdo->prepare("INSERT INTO messages (club_id, sender_id, recipient_id, subject, body, is_announcement) VALUES (?, ?, ?, ?, ?, ?)");
@@ -111,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId) {
     }
   } elseif ($action === 'mark_read') {
     $msgId = (int)($_POST['message_id'] ?? 0);
-    $stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ? AND (recipient_id = ? OR (is_announcement = 1 AND recipient_id IS NULL))");
+    $stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ? AND recipient_id = ?");
     $stmt->execute([$msgId, $userId]);
   } elseif ($action === 'delete') {
     $msgId = (int)($_POST['message_id'] ?? 0);
@@ -138,12 +154,12 @@ if ($selectedClubId) {
 
 $inboxMessages = [];
 $sentMessages = [];
-if ($selectedClubId) {
+if ($selectedClubId && $selectedClub) {
   $stmt = $pdo->prepare("
     SELECT m.*, u.name as sender_name
     FROM messages m
     JOIN users u ON m.sender_id = u.id
-    WHERE m.club_id = ? AND (m.recipient_id = ? OR (m.is_announcement = 1 AND m.recipient_id IS NULL))
+    WHERE m.club_id = ? AND m.recipient_id = ? AND m.is_announcement = 0
     ORDER BY m.created_at DESC
     LIMIT 50
   ");
@@ -160,6 +176,12 @@ if ($selectedClubId) {
   ");
   $stmt->execute([$selectedClubId, $userId]);
   $sentMessages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+if ($selectedClubId && !$selectedClub) {
+  $inboxMessages = [];
+  $sentMessages = [];
+  $clubMembers = [];
 }
 
 $activeTab = $_GET['tab'] ?? 'inbox';

@@ -57,9 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
     if ($action === 'approve') {
       $stmt = $pdo->prepare("UPDATE club_members SET membership_status = 'active', updated_at = NOW() WHERE id = ?");
       $stmt->execute([$memberId]);
+      notify_membership_approved($pdo, (int)$member['user_id'], $clubId, $club['name'], $club['slug']);
       $message = "Approved membership for {$member['name']}.";
       $messageType = 'success';
     } elseif ($action === 'reject') {
+      notify_membership_rejected($pdo, (int)$member['user_id'], $clubId, $club['name']);
       $stmt = $pdo->prepare("DELETE FROM club_members WHERE id = ?");
       $stmt->execute([$memberId]);
       $message = "Rejected membership request from {$member['name']}.";

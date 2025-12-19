@@ -96,8 +96,7 @@ function get_unread_notification_count(PDO $pdo, int $userId): int {
 function get_unread_message_count(PDO $pdo, int $userId): int {
   $stmt = $pdo->prepare("
     SELECT COUNT(*) FROM messages 
-    WHERE (recipient_id = ? OR (recipient_id IS NULL AND is_announcement = 1))
-      AND is_read = 0
+    WHERE recipient_id = ? AND is_announcement = 0 AND is_read = 0
   ");
   $stmt->execute([$userId]);
   return (int)$stmt->fetchColumn();

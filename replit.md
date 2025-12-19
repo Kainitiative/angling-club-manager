@@ -52,6 +52,8 @@ User Roles:
 - Image upload with GD library resizing (logos: 200px max, gallery: 1200px max)
 - Financial management with 12 categories and reporting
 - Club news system with draft/publish workflow, pinning, and officer access
+- Internal notifications for membership approvals, COTM selection, and more
+- Club messaging system with direct messages and announcements
 
 ## Member Engagement Features
 - **Catch Logging**: Members can log their catches with species, weight, length, location, photos, and notes
@@ -76,6 +78,8 @@ Images are processed using PHP's GD library:
 - `/public/leaderboard.php?season_id={id}` - Season leaderboard
 - `/public/admin/seasons.php?club_id={id}` - Manage competition seasons (admin)
 - `/public/admin/news.php?club_id={id}` - Manage club news (admin/chairperson/secretary)
+- `/public/notifications.php` - View and manage notifications
+- `/public/messages.php` - Club messaging inbox and compose
 
 ## Configuration
 For local Laragon development, update `config.local.php`:

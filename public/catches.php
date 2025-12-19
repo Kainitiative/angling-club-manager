@@ -160,6 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isMember || $isAdmin)) {
     $stmt->execute([$club['id']]);
     $stmt = $pdo->prepare("UPDATE catch_logs SET is_catch_of_month = 1 WHERE id = ? AND club_id = ?");
     $stmt->execute([$catchId, $club['id']]);
+    $stmt = $pdo->prepare("SELECT user_id FROM catch_logs WHERE id = ?");
+    $stmt->execute([$catchId]);
+    $catchOwner = $stmt->fetch();
+    if ($catchOwner) {
+      notify_catch_of_month($pdo, (int)$catchOwner['user_id'], (int)$club['id'], $club['name'], $club['slug']);
+    }
     $message = 'Catch of the Month updated!';
     $messageType = 'success';
   } elseif ($action === 'clear_catch_of_month' && $isAdmin) {
