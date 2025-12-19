@@ -843,8 +843,9 @@ $billingPeriodLabels = [
                        !empty(trim($club['rules_policies'] ?? '')) || 
                        !empty(trim($club['privacy_policy'] ?? '')) || 
                        !empty(trim($club['membership_terms'] ?? ''));
+        $canEditPolicies = $isAdmin || in_array($userCommitteeRole ?? '', ['chairperson', 'secretary', 'pro']);
       ?>
-      <?php if ($hasPolicies || $isAdmin): ?>
+      <?php if ($hasPolicies || $canEditPolicies): ?>
         <div class="card info-card mb-4">
           <div class="card-header bg-white">
             <h6 class="mb-0">Club Documents</h6>
