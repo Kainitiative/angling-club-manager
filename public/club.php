@@ -226,6 +226,24 @@ $stmt = $pdo->prepare("SELECT * FROM club_gallery WHERE club_id = ? ORDER BY dis
 $stmt->execute([$club['id']]);
 $clubGallery = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$stmt = $pdo->prepare("
+  SELECT n.*, u.name as author_name 
+  FROM club_news n 
+  JOIN users u ON n.author_id = u.id 
+  WHERE n.club_id = ? AND n.published_at IS NOT NULL
+  ORDER BY n.is_pinned DESC, n.published_at DESC
+  LIMIT 10
+");
+$stmt->execute([$club['id']]);
+$clubNews = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$canManageNews = false;
+if ($isAdmin) {
+  $canManageNews = true;
+} elseif ($isMember && in_array($userCommitteeRole, ['chairperson', 'secretary'])) {
+  $canManageNews = true;
+}
+
 function sanitizeHexColor(string $color, string $default = '#1e3a5f'): string {
   $color = trim($color);
   if (preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
@@ -421,6 +439,7 @@ $billingPeriodLabels = [
           <a href="/public/admin/club_profile.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-2">Edit Profile</a>
           <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Members</a>
           <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
+          <a href="/public/admin/news.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">News</a>
         <?php elseif ($isMember): ?>
           <?php
             $committeeRolesForFinances = ['chairperson', 'secretary', 'treasurer', 'pro', 'safety_officer', 'child_liaison_officer'];
@@ -432,6 +451,9 @@ $billingPeriodLabels = [
           <?php endif; ?>
           <?php if ($canViewFinances): ?>
             <a href="/public/admin/finances.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">Finances</a>
+          <?php endif; ?>
+          <?php if ($canManageNews): ?>
+            <a href="/public/admin/news.php?club_id=<?= $club['id'] ?>" class="btn btn-light btn-sm ms-1">News</a>
           <?php endif; ?>
         <?php elseif ($membershipStatus === 'pending'): ?>
           <span class="badge bg-info fs-6 p-2">Request Pending</span>
@@ -460,6 +482,36 @@ $billingPeriodLabels = [
           </div>
           <div class="card-body">
             <p class="mb-0"><?= nl2br(e($club['about_text'])) ?></p>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($clubNews)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Club News</h5>
+            <?php if ($canManageNews): ?>
+              <a href="/public/admin/news.php?club_id=<?= $club['id'] ?>" class="btn btn-sm btn-outline-primary">Manage News</a>
+            <?php endif; ?>
+          </div>
+          <div class="list-group list-group-flush">
+            <?php foreach ($clubNews as $news): ?>
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <?php if ($news['is_pinned']): ?>
+                      <span class="badge bg-warning text-dark me-1">Pinned</span>
+                    <?php endif; ?>
+                    <h6 class="mb-1"><?= e($news['title']) ?></h6>
+                    <small class="text-muted">
+                      <?= date('d M Y', strtotime($news['published_at'])) ?>
+                      &bull; By <?= e($news['author_name']) ?>
+                    </small>
+                  </div>
+                </div>
+                <p class="mb-0 mt-2"><?= nl2br(e($news['content'])) ?></p>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       <?php endif; ?>
