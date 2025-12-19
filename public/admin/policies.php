@@ -33,7 +33,7 @@ $stmt->execute([$clubId, $userId]);
 $memberRow = $stmt->fetch();
 $committeeRole = $memberRow['committee_role'] ?? null;
 
-$canEditPolicies = $adminRow || in_array($committeeRole, ['chairperson', 'secretary']);
+$canEditPolicies = $adminRow || in_array($committeeRole, ['chairperson', 'secretary', 'pro']);
 
 if (!$canEditPolicies) {
   http_response_code(403);

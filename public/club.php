@@ -853,7 +853,7 @@ $billingPeriodLabels = [
             <a href="/public/policies.php?slug=<?= e($club['slug']) ?>" class="btn btn-outline-primary btn-sm w-100">
               View Policies & Constitution
             </a>
-            <?php if ($isAdmin): ?>
+            <?php if ($isAdmin || in_array($userCommitteeRole ?? '', ['chairperson', 'secretary', 'pro'])): ?>
               <a href="/public/admin/policies.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-secondary btn-sm w-100 mt-2">
                 Edit Policies
               </a>
