@@ -170,6 +170,9 @@ if ($tableCheck) {
   $stmt->execute([$userId]);
   $fishingStats['recent_catches'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+$unreadNotifications = get_unread_notification_count($pdo, $userId);
+$unreadMessages = get_unread_message_count($pdo, $userId);
 ?>
 <!doctype html>
 <html lang="en">
@@ -294,6 +297,22 @@ if ($tableCheck) {
   <div class="container">
     <a class="navbar-brand fw-bold" href="/">Angling Club Manager</a>
     <div class="ms-auto d-flex align-items-center gap-2">
+      <a class="btn btn-outline-light btn-sm position-relative" href="/public/notifications.php">
+        Notifications
+        <?php if ($unreadNotifications > 0): ?>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <?= $unreadNotifications > 99 ? '99+' : $unreadNotifications ?>
+          </span>
+        <?php endif; ?>
+      </a>
+      <a class="btn btn-outline-light btn-sm position-relative" href="/public/messages.php">
+        Messages
+        <?php if ($unreadMessages > 0): ?>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <?= $unreadMessages > 99 ? '99+' : $unreadMessages ?>
+          </span>
+        <?php endif; ?>
+      </a>
       <a class="btn btn-outline-light btn-sm" href="/public/profile.php">Edit Profile</a>
       <a class="btn btn-light btn-sm" href="/public/auth/logout.php">Logout</a>
     </div>
