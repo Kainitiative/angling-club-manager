@@ -54,6 +54,7 @@ User Roles:
 - Club news system with draft/publish workflow, pinning, and officer access
 - Internal notifications for membership approvals, COTM selection, and more
 - Club messaging system with direct messages and announcements
+- Club policies and constitution pages (text-based, editable by admins)
 
 ## Member Engagement Features
 - **Catch Logging**: Members can log their catches with species, weight, length, location, photos, and notes

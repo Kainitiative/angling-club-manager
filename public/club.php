@@ -838,6 +838,30 @@ $billingPeriodLabels = [
         </div>
       <?php endif; ?>
 
+      <?php 
+        $hasPolicies = !empty(trim($club['constitution'] ?? '')) || 
+                       !empty(trim($club['rules_policies'] ?? '')) || 
+                       !empty(trim($club['privacy_policy'] ?? '')) || 
+                       !empty(trim($club['membership_terms'] ?? ''));
+      ?>
+      <?php if ($hasPolicies || $isAdmin): ?>
+        <div class="card info-card mb-4">
+          <div class="card-header bg-white">
+            <h6 class="mb-0">Club Documents</h6>
+          </div>
+          <div class="card-body">
+            <a href="/public/policies.php?slug=<?= e($club['slug']) ?>" class="btn btn-outline-primary btn-sm w-100">
+              View Policies & Constitution
+            </a>
+            <?php if ($isAdmin): ?>
+              <a href="/public/admin/policies.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-secondary btn-sm w-100 mt-2">
+                Edit Policies
+              </a>
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
       <div class="card mb-4">
         <div class="card-body text-center">
           <p class="text-muted mb-2">Share this club</p>
