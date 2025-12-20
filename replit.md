@@ -55,6 +55,13 @@ User Roles:
 - Internal notifications for membership approvals, COTM selection, and more
 - Club messaging system with direct messages and announcements
 - Club policies and constitution pages (text-based, editable by admins)
+- Super admin panel for platform-wide management
+
+## Subscription & Billing (Planned)
+- **Subscription Plans**: Free, Club Admin (€10/mo), Club Pro (€15/mo)
+- **Trial System**: 3-month free trial for new club admins
+- **Status Tracking**: trial, active, cancelled, expired, suspended
+- **Super Admin Features**: View all clubs, users, subscriptions, extend trials, change status
 
 ## Member Engagement Features
 - **Catch Logging**: Members can log their catches with species, weight, length, location, photos, and notes
