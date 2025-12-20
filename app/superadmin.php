@@ -35,11 +35,19 @@ function get_platform_stats(PDO $pdo): array {
   $stmt = $pdo->query("SELECT COUNT(*) FROM club_members WHERE membership_status = 'active'");
   $stats['total_active_members'] = (int)$stmt->fetchColumn();
   
-  $stmt = $pdo->query("SELECT COUNT(*) FROM catches");
-  $stats['total_catches'] = (int)$stmt->fetchColumn();
+  try {
+    $stmt = $pdo->query("SELECT COUNT(*) FROM catch_logs");
+    $stats['total_catches'] = (int)$stmt->fetchColumn();
+  } catch (PDOException $e) {
+    $stats['total_catches'] = 0;
+  }
   
-  $stmt = $pdo->query("SELECT COUNT(*) FROM competitions");
-  $stats['total_competitions'] = (int)$stmt->fetchColumn();
+  try {
+    $stmt = $pdo->query("SELECT COUNT(*) FROM competitions");
+    $stats['total_competitions'] = (int)$stmt->fetchColumn();
+  } catch (PDOException $e) {
+    $stats['total_competitions'] = 0;
+  }
   
   try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM club_subscriptions WHERE status = 'trial'");
