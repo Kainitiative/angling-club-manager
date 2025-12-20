@@ -68,6 +68,9 @@ function get_platform_stats(PDO $pdo): array {
 }
 
 function get_all_clubs_with_subscriptions(PDO $pdo, int $limit = 50, int $offset = 0): array {
+  $limit = (int)$limit;
+  $offset = (int)$offset;
+  
   try {
     $stmt = $pdo->prepare("
       SELECT c.*, 
@@ -87,9 +90,9 @@ function get_all_clubs_with_subscriptions(PDO $pdo, int $limit = 50, int $offset
       LEFT JOIN club_admins ca ON c.id = ca.club_id AND ca.admin_role = 'owner'
       LEFT JOIN users u ON ca.user_id = u.id
       ORDER BY c.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT {$limit} OFFSET {$offset}
     ");
-    $stmt->execute([$limit, $offset]);
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   } catch (PDOException $e) {
     $stmt = $pdo->prepare("
@@ -108,23 +111,26 @@ function get_all_clubs_with_subscriptions(PDO $pdo, int $limit = 50, int $offset
       LEFT JOIN club_admins ca ON c.id = ca.club_id AND ca.admin_role = 'owner'
       LEFT JOIN users u ON ca.user_id = u.id
       ORDER BY c.created_at DESC
-      LIMIT ? OFFSET ?
+      LIMIT {$limit} OFFSET {$offset}
     ");
-    $stmt->execute([$limit, $offset]);
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 }
 
 function get_all_users(PDO $pdo, int $limit = 50, int $offset = 0): array {
+  $limit = (int)$limit;
+  $offset = (int)$offset;
+  
   $stmt = $pdo->prepare("
     SELECT u.*,
            (SELECT c.name FROM clubs c JOIN club_admins ca ON c.id = ca.club_id WHERE ca.user_id = u.id LIMIT 1) as owned_club,
            (SELECT c.name FROM clubs c JOIN club_members cm ON c.id = cm.club_id WHERE cm.user_id = u.id AND cm.membership_status = 'active' LIMIT 1) as member_of_club
     FROM users u
     ORDER BY u.created_at DESC
-    LIMIT ? OFFSET ?
+    LIMIT {$limit} OFFSET {$offset}
   ");
-  $stmt->execute([$limit, $offset]);
+  $stmt->execute();
   return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
