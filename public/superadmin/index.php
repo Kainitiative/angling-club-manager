@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../app/bootstrap.php';
 require_once __DIR__ . '/../../app/superadmin.php';
+require_once __DIR__ . '/../../app/layout/super_admin_shell.php';
 
 require_login();
 require_super_admin($pdo);
@@ -10,43 +11,23 @@ require_super_admin($pdo);
 $stats = get_platform_stats($pdo);
 $recentClubs = get_all_clubs_with_subscriptions($pdo, 10, 0);
 $recentUsers = get_all_users($pdo, 10, 0);
+
+$currentPage = 'dashboard';
+$pageTitle = 'Dashboard';
+$customStyles = '
+  .stat-card { border-left: 4px solid; border-radius: 8px; }
+  .stat-card.primary { border-color: #0d6efd; }
+  .stat-card.success { border-color: #198754; }
+  .stat-card.warning { border-color: #ffc107; }
+  .stat-card.danger { border-color: #dc3545; }
+  .stat-card.info { border-color: #0dcaf0; }
+  .stat-number { font-size: 1.75rem; font-weight: bold; }
+';
+
+super_admin_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Dashboard']);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Super Admin Dashboard - Angling Club Manager</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    .stat-card { border-left: 4px solid; }
-    .stat-card.primary { border-color: #0d6efd; }
-    .stat-card.success { border-color: #198754; }
-    .stat-card.warning { border-color: #ffc107; }
-    .stat-card.danger { border-color: #dc3545; }
-    .stat-card.info { border-color: #0dcaf0; }
-    .stat-number { font-size: 2rem; font-weight: bold; }
-  </style>
-</head>
-<body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/public/superadmin/">
-      <i class="bi bi-shield-lock"></i> Super Admin
-    </a>
-    <div class="navbar-nav ms-auto">
-      <a class="nav-link" href="/public/superadmin/clubs.php">Clubs</a>
-      <a class="nav-link" href="/public/superadmin/users.php">Users</a>
-      <a class="nav-link" href="/public/superadmin/subscriptions.php">Subscriptions</a>
-      <a class="nav-link" href="/public/dashboard.php">Back to App</a>
-    </div>
-  </div>
-</nav>
-
-<div class="container-fluid py-4">
-  <h2 class="mb-4">Platform Overview</h2>
+<h4 class="mb-4">Platform Overview</h4>
   
   <div class="row g-4 mb-4">
     <div class="col-md-4 col-lg-2">
@@ -211,8 +192,6 @@ $recentUsers = get_all_users($pdo, 10, 0);
       </div>
     </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+super_admin_shell_end();

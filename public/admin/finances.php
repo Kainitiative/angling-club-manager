@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../app/bootstrap.php';
+require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
 
 require_login();
 
@@ -235,89 +236,72 @@ try {
 } catch (Exception $e) {
   $accounts = [];
 }
+
+$currentPage = $showAccounts ? 'accounts' : ($showReport ? 'reports' : 'transactions');
+$pageTitle = 'Finances';
+$customStyles = '
+  .finance-card {
+    border-left: 4px solid #dee2e6;
+  }
+  .finance-card.income {
+    border-left-color: #198754;
+    background: #f8fff8;
+  }
+  .finance-card.expense {
+    border-left-color: #dc3545;
+    background: #fff8f8;
+  }
+  .summary-card {
+    border-radius: 12px;
+  }
+  .summary-card.income {
+    background: linear-gradient(135deg, #198754 0%, #28a745 100%);
+    color: white;
+  }
+  .summary-card.expense {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
+    color: white;
+  }
+  .summary-card.balance {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    color: white;
+  }
+  .summary-card.balance.negative {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  }
+  .category-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+  .report-table th {
+    background: #f8f9fa;
+  }
+  .nav-pills .nav-link.active {
+    background: var(--sidebar-active);
+  }
+';
+
+club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Finances']);
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Club Finances - <?= e($club['name']) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .finance-card {
-      border-left: 4px solid #dee2e6;
-    }
-    .finance-card.income {
-      border-left-color: #198754;
-      background: #f8fff8;
-    }
-    .finance-card.expense {
-      border-left-color: #dc3545;
-      background: #fff8f8;
-    }
-    .summary-card {
-      border-radius: 12px;
-    }
-    .summary-card.income {
-      background: linear-gradient(135deg, #198754 0%, #28a745 100%);
-      color: white;
-    }
-    .summary-card.expense {
-      background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-      color: white;
-    }
-    .summary-card.balance {
-      background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-      color: white;
-    }
-    .summary-card.balance.negative {
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    }
-    .category-badge {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-    }
-    .report-table th {
-      background: #f8f9fa;
-    }
-    .nav-pills .nav-link.active {
-      background: #1e3a5f;
-    }
-  </style>
-</head>
-<body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
-    <div class="ms-auto">
-      <a class="btn btn-outline-light btn-sm" href="/public/club.php?slug=<?= e($club['slug']) ?>">View Club</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-1">Club Finances</h4>
   </div>
-</nav>
-
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="mb-1">Club Finances</h1>
-      <p class="text-muted mb-0"><?= e($club['name']) ?></p>
-    </div>
-    <div>
-      <ul class="nav nav-pills">
-        <li class="nav-item">
-          <a class="nav-link <?= !$showReport && !$showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">Transactions</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link <?= $showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&accounts=1">Accounts</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link <?= $showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&report=1&year=<?= $filterYear ?: date('Y') ?>">Summary Report</a>
-        </li>
-      </ul>
-    </div>
+  <div>
+    <ul class="nav nav-pills">
+      <li class="nav-item">
+        <a class="nav-link <?= !$showReport && !$showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">Transactions</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <?= $showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&accounts=1">Accounts</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <?= $showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&report=1&year=<?= $filterYear ?: date('Y') ?>">Summary Report</a>
+      </li>
+    </ul>
   </div>
+</div>
 
   <?php if ($message): ?>
     <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
@@ -771,8 +755,6 @@ try {
     </div>
 
   <?php endif; ?>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+club_admin_shell_end();
