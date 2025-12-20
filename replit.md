@@ -12,6 +12,35 @@ A PHP-based web application for managing angling clubs. Includes user accounts, 
 - `schema.sql` - Database schema
 - `db_test.php` - Database connection test script
 
+## Navigation System
+The application uses a unified shell-based navigation system with four distinct layouts:
+
+### Layout Files (`app/layout/`)
+- `header.php` - Shared HTML head, CSS variables, common styles
+- `footer.php` - Shared scripts, mobile sidebar toggle
+- `member_shell.php` - For logged-in user pages (dashboard, messages, tasks, profile)
+- `club_admin_shell.php` - For club administration pages with organized sidebar
+- `super_admin_shell.php` - For platform-wide admin pages
+- `public_shell.php` - For public-facing pages (homepage, browse clubs)
+
+### Navigation Config (`app/nav_config.php`)
+Central place for all menu definitions. Functions:
+- `get_member_nav()` - Member sidebar navigation
+- `get_club_admin_nav()` - Club admin sidebar (grouped by: Overview, People, Engagement, Governance, Finance, Settings)
+- `get_super_admin_nav()` - Super admin sidebar
+- `get_public_nav()` - Public header navigation
+- `render_breadcrumbs()` - Breadcrumb rendering
+
+### Usage Example
+```php
+require_once __DIR__ . '/../app/layout/club_admin_shell.php';
+
+$currentPage = 'members';
+club_admin_shell_start($pdo, $club, ['title' => 'Members', 'page' => $currentPage]);
+// ... page content ...
+club_admin_shell_end();
+```
+
 ## Technical Stack
 - **Language**: PHP 8.4
 - **Database**: MySQL/MariaDB (primary), with PostgreSQL support for Replit

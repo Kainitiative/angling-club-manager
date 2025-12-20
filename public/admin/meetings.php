@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../app/bootstrap.php';
 require_once __DIR__ . '/../../app/meetings.php';
+require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
 
 require_login();
 
@@ -90,46 +91,28 @@ $meetings = get_meetings($pdo, $clubId, 50, 0);
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM meetings WHERE club_id = ?");
 $stmt->execute([$clubId]);
 $totalMeetings = (int)$stmt->fetchColumn();
+
+$currentPage = 'meetings';
+$pageTitle = 'Meetings';
+$customStyles = '
+  .meeting-card { border-left: 4px solid var(--primary-color); transition: all 0.2s; border-radius: 8px; }
+  .meeting-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .meeting-card.completed { border-left-color: #198754; }
+  .meeting-card.cancelled { border-left-color: #dc3545; opacity: 0.7; }
+';
+
+club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Meetings']);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meetings - <?= e($club['name']) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    :root { --primary-dark: #1e3a5f; --primary: #2d5a87; }
-    .navbar-custom { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); }
-    .meeting-card { border-left: 4px solid var(--primary); transition: all 0.2s; }
-    .meeting-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .meeting-card.completed { border-left-color: #198754; }
-    .meeting-card.cancelled { border-left-color: #dc3545; opacity: 0.7; }
-  </style>
-</head>
-<body class="bg-light">
 
-<nav class="navbar navbar-dark navbar-custom">
-  <div class="container">
-    <a class="navbar-brand" href="/public/club.php?slug=<?= e($club['slug']) ?>"><?= e($club['name']) ?></a>
-    <div class="d-flex gap-2">
-      <a href="/public/admin/members.php?club_id=<?= $clubId ?>" class="btn btn-outline-light btn-sm">Members</a>
-      <a href="/public/dashboard.php" class="btn btn-outline-light btn-sm">Dashboard</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-1">Meetings</h4>
+    <p class="text-muted mb-0"><?= $totalMeetings ?> meeting<?= $totalMeetings !== 1 ? 's' : '' ?> recorded</p>
   </div>
-</nav>
-
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="mb-1">Meetings</h2>
-      <p class="text-muted mb-0"><?= $totalMeetings ?> meeting<?= $totalMeetings !== 1 ? 's' : '' ?> recorded</p>
-    </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMeetingModal">
-      <i class="bi bi-plus-lg"></i> New Meeting
-    </button>
-  </div>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMeetingModal">
+    <i class="bi bi-plus-lg"></i> New Meeting
+  </button>
+</div>
   
   <?php if ($message): ?>
     <div class="alert alert-<?= $messageType ?> alert-dismissible fade show">
@@ -315,6 +298,5 @@ $totalMeetings = (int)$stmt->fetchColumn();
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+club_admin_shell_end();

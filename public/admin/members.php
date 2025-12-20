@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../app/bootstrap.php';
+require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
 
 require_login();
 
@@ -135,63 +136,48 @@ $roleBadgeColors = [
   'child_liaison_officer' => 'bg-secondary',
   'member' => 'bg-light text-dark',
 ];
+
+$currentPage = 'members';
+$pageTitle = 'Members';
+$customStyles = '
+  .member-card {
+    border-left: 4px solid #dee2e6;
+    transition: all 0.2s;
+    border-radius: 8px;
+  }
+  .member-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .member-card.pending {
+    border-left-color: #ffc107;
+    background: #fffbeb;
+  }
+  .member-card.active {
+    border-left-color: #198754;
+  }
+  .member-card.suspended {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+  }
+  .member-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .role-select {
+    max-width: 200px;
+  }
+  .committee-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+';
+
+club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Members']);
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Manage Members - <?= e($club['name']) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .member-card {
-      border-left: 4px solid #dee2e6;
-      transition: all 0.2s;
-    }
-    .member-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .member-card.pending {
-      border-left-color: #ffc107;
-      background: #fffbeb;
-    }
-    .member-card.active {
-      border-left-color: #198754;
-    }
-    .member-card.suspended {
-      border-left-color: #dc3545;
-      background: #fff5f5;
-    }
-    .member-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .role-select {
-      max-width: 200px;
-    }
-    .committee-badge {
-      font-size: 0.75rem;
-      padding: 4px 8px;
-    }
-  </style>
-</head>
-<body class="bg-light">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
-    <div class="ms-auto">
-      <a class="btn btn-outline-light btn-sm" href="/public/club.php?slug=<?= e($club['slug']) ?>">View Club</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
-    </div>
-  </div>
-</nav>
-
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h1 class="mb-1">Manage Members</h1>
       <p class="text-muted mb-0"><?= e($club['name']) ?></p>
@@ -356,8 +342,6 @@ $roleBadgeColors = [
     <?php endif; ?>
     
   <?php endif; ?>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+club_admin_shell_end();
