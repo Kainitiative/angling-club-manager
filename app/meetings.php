@@ -34,7 +34,9 @@ function can_view_decisions(PDO $pdo, int $clubId, ?int $userId = null): bool {
   
   $stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
   $stmt->execute([$clubId, $userId]);
-  if ($stmt->fetchColumn()) {
+  $adminRole = $stmt->fetchColumn();
+  
+  if ($adminRole === 'owner') {
     return true;
   }
   

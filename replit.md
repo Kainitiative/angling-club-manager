@@ -81,11 +81,22 @@ Images are processed using PHP's GD library:
 - **Storage**: `uploads/logos/`, `uploads/gallery/`, and `uploads/catches/` directories
 - **Helper file**: `app/image_upload.php` contains `processLogoUpload()`, `processGalleryUpload()`, and `processCatchUpload()` functions
 
+## Meeting Management
+- **Meetings**: Track committee, AGM, EGM, and general meetings with date/time/location
+- **Minutes**: Record meeting attendees, apologies, and full minutes (visible to all members)
+- **Decisions**: Track motions with proposer, seconder, and vote status (visible to committee only)
+- **Tasks**: Assign action items to members with priority, due dates, and notifications
+- **Notes**: Internal committee notes for private reference
+- **Access Control**: `can_manage_meetings()` for admin/chairperson/secretary, `can_view_decisions()` for committee members
+
 ## Key Pages
 - `/public/catches.php?slug={club_slug}` - Catch log page for a club
 - `/public/leaderboard.php?season_id={id}` - Season leaderboard
 - `/public/admin/seasons.php?club_id={id}` - Manage competition seasons (admin)
 - `/public/admin/news.php?club_id={id}` - Manage club news (admin/chairperson/secretary)
+- `/public/admin/meetings.php?club_id={id}` - Manage meetings (admin/chairperson/secretary)
+- `/public/meetings.php?slug={club_slug}` - View meeting minutes (members)
+- `/public/tasks.php` - View and update assigned tasks
 - `/public/notifications.php` - View and manage notifications
 - `/public/messages.php` - Club messaging inbox and compose
 
