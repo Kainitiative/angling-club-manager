@@ -459,6 +459,7 @@ try {
                   <small class="text-muted"><?= (int)$club['member_count'] ?> member<?= $club['member_count'] != 1 ? 's' : '' ?></small>
                 </div>
                 <div class="d-flex gap-2">
+                  <a href="/public/admin/accounts.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-success btn-sm">Accounts</a>
                   <a href="/public/admin/meetings.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-info btn-sm">Meetings</a>
                   <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm">Competitions</a>
                   <?php if ((int)$club['pending_count'] > 0): ?>
