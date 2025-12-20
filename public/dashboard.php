@@ -174,6 +174,16 @@ if ($tableCheck) {
 
 $unreadNotifications = get_unread_notification_count($pdo, $userId);
 $unreadMessages = get_unread_message_count($pdo, $userId);
+
+require_once __DIR__ . '/../app/meetings.php';
+$userTasks = [];
+try {
+  $userTasks = get_user_tasks($pdo, $userId);
+  $userTasks = array_filter($userTasks, fn($t) => !in_array($t['status'], ['completed', 'cancelled']));
+  $userTasks = array_slice($userTasks, 0, 5);
+} catch (Exception $e) {
+  $userTasks = [];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -449,6 +459,7 @@ $unreadMessages = get_unread_message_count($pdo, $userId);
                   <small class="text-muted"><?= (int)$club['member_count'] ?> member<?= $club['member_count'] != 1 ? 's' : '' ?></small>
                 </div>
                 <div class="d-flex gap-2">
+                  <a href="/public/admin/meetings.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-info btn-sm">Meetings</a>
                   <a href="/public/admin/competitions.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm">Competitions</a>
                   <?php if ((int)$club['pending_count'] > 0): ?>
                     <a href="/public/admin/members.php?club_id=<?= $club['id'] ?>" class="btn btn-warning btn-sm">
@@ -562,6 +573,42 @@ $unreadMessages = get_unread_message_count($pdo, $userId);
             <?php elseif (!empty($allUserClubIds)): ?>
               <p class="text-muted text-center mb-0">No catches logged yet. Visit your club's catch log to start tracking!</p>
             <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($userTasks)): ?>
+        <div class="section-card card mb-4">
+          <div class="section-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">My Tasks</h5>
+            <a href="/public/tasks.php" class="btn btn-outline-primary btn-sm">View All</a>
+          </div>
+          <div class="card-body p-0">
+            <?php foreach ($userTasks as $task): ?>
+              <div class="d-flex align-items-center p-3 border-bottom">
+                <div class="flex-grow-1">
+                  <strong><?= e($task['title']) ?></strong>
+                  <?php 
+                    $statusBadge = match($task['status']) {
+                      'in_progress' => 'primary',
+                      default => 'warning'
+                    };
+                  ?>
+                  <span class="badge bg-<?= $statusBadge ?> ms-1"><?= ucfirst(str_replace('_', ' ', $task['status'])) ?></span>
+                  <?php if ($task['due_date']): ?>
+                    <?php $isOverdue = strtotime($task['due_date']) < time(); ?>
+                    <span class="badge <?= $isOverdue ? 'bg-danger' : 'bg-light text-dark border' ?>">
+                      Due: <?= date('j M', strtotime($task['due_date'])) ?>
+                    </span>
+                  <?php endif; ?>
+                  <br>
+                  <small class="text-muted">
+                    <a href="/public/club.php?slug=<?= e($task['club_slug']) ?>"><?= e($task['club_name']) ?></a>
+                  </small>
+                </div>
+                <a href="/public/tasks.php" class="btn btn-sm btn-outline-secondary">Update</a>
+              </div>
+            <?php endforeach; ?>
           </div>
         </div>
       <?php endif; ?>
