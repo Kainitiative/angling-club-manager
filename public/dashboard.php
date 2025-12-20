@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
+require_once __DIR__ . '/../app/superadmin.php';
 
 require_login();
 
@@ -297,6 +298,9 @@ $unreadMessages = get_unread_message_count($pdo, $userId);
   <div class="container">
     <a class="navbar-brand fw-bold" href="/">Angling Club Manager</a>
     <div class="ms-auto d-flex align-items-center gap-2">
+      <?php if (is_super_admin($pdo)): ?>
+        <a class="btn btn-warning btn-sm" href="/public/superadmin/">Super Admin</a>
+      <?php endif; ?>
       <a class="btn btn-outline-light btn-sm position-relative" href="/public/notifications.php">
         Notifications
         <?php if ($unreadNotifications > 0): ?>
