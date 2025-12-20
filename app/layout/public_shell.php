@@ -71,13 +71,21 @@ function public_shell_end($options = []) {
 
 <footer class="bg-dark text-white py-4 mt-auto">
     <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <p class="mb-0 text-muted">&copy; <?= date('Y') ?> Angling Club Manager</p>
+        <div class="row">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h6 class="text-white mb-2">Angling Club Manager</h6>
+                <p class="text-muted small mb-0">&copy; <?= date('Y') ?> Patrick Ryan Digital Design</p>
             </div>
-            <div class="col-md-6 text-md-end">
-                <a href="/public/clubs.php" class="text-muted text-decoration-none me-3">Browse Clubs</a>
-                <a href="/public/competitions.php" class="text-muted text-decoration-none">Competitions</a>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h6 class="text-white mb-2">Explore</h6>
+                <a href="/public/clubs.php" class="text-muted text-decoration-none d-block small mb-1">Browse Clubs</a>
+                <a href="/public/competitions.php" class="text-muted text-decoration-none d-block small">Competitions</a>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-white mb-2">Legal</h6>
+                <a href="/public/legal/privacy.php" class="text-muted text-decoration-none d-block small mb-1">Privacy Policy</a>
+                <a href="/public/legal/terms.php" class="text-muted text-decoration-none d-block small mb-1">Terms & Conditions</a>
+                <a href="/public/legal/cookies.php" class="text-muted text-decoration-none d-block small">Cookie Policy</a>
             </div>
         </div>
     </div>
