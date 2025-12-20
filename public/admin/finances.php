@@ -62,11 +62,41 @@ $filterMonth = $_GET['month'] ?? '';
 $filterYear = $_GET['year'] ?? '';
 $filterCategory = $_GET['category'] ?? '';
 $showReport = isset($_GET['report']);
+$showAccounts = isset($_GET['accounts']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
   $action = $_POST['action'] ?? '';
   
-  if ($action === 'add') {
+  if ($action === 'add_account') {
+    $accountName = trim($_POST['account_name'] ?? '');
+    $accountType = $_POST['account_type'] ?? 'bank';
+    $balance = (float)($_POST['balance'] ?? 0);
+    $notes = trim($_POST['notes'] ?? '') ?: null;
+    
+    if ($accountName) {
+      $stmt = $pdo->prepare("INSERT INTO club_accounts (club_id, account_name, account_type, balance, notes) VALUES (?, ?, ?, ?, ?)");
+      $stmt->execute([$clubId, $accountName, $accountType, $balance, $notes]);
+      $message = 'Account added.';
+      $messageType = 'success';
+    }
+  } elseif ($action === 'update_balance') {
+    $accountId = (int)($_POST['account_id'] ?? 0);
+    $balance = (float)($_POST['balance'] ?? 0);
+    if ($accountId) {
+      $stmt = $pdo->prepare("UPDATE club_accounts SET balance = ? WHERE id = ? AND club_id = ?");
+      $stmt->execute([$balance, $accountId, $clubId]);
+      $message = 'Balance updated.';
+      $messageType = 'success';
+    }
+  } elseif ($action === 'delete_account') {
+    $accountId = (int)($_POST['account_id'] ?? 0);
+    if ($accountId) {
+      $stmt = $pdo->prepare("DELETE FROM club_accounts WHERE id = ? AND club_id = ?");
+      $stmt->execute([$accountId, $clubId]);
+      $message = 'Account deleted.';
+      $messageType = 'success';
+    }
+  } elseif ($action === 'add') {
     $entryType = $_POST['entry_type'] ?? '';
     $title = trim($_POST['title'] ?? '');
     $amount = (float)($_POST['amount'] ?? 0);
@@ -192,6 +222,19 @@ if ($showReport) {
     $reportData[$m]['categories'][$cat][$type] += $total;
   }
 }
+
+$accounts = [];
+$accountsTotal = 0;
+try {
+  $stmt = $pdo->prepare("SELECT * FROM club_accounts WHERE club_id = ? AND is_active = 1 ORDER BY account_name ASC");
+  $stmt->execute([$clubId]);
+  $accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  foreach ($accounts as $acc) {
+    $accountsTotal += (float)$acc['balance'];
+  }
+} catch (Exception $e) {
+  $accounts = [];
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -264,7 +307,10 @@ if ($showReport) {
     <div>
       <ul class="nav nav-pills">
         <li class="nav-item">
-          <a class="nav-link <?= !$showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">Transactions</a>
+          <a class="nav-link <?= !$showReport && !$showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">Transactions</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <?= $showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&accounts=1">Accounts</a>
         </li>
         <li class="nav-item">
           <a class="nav-link <?= $showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&report=1&year=<?= $filterYear ?: date('Y') ?>">Summary Report</a>
@@ -280,7 +326,145 @@ if ($showReport) {
     </div>
   <?php endif; ?>
 
-  <?php if ($showReport): ?>
+  <?php if ($showAccounts): ?>
+    
+    <div class="card mb-4" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white;">
+      <div class="card-body text-center py-4">
+        <h6 class="text-white-50 mb-1">Total Across All Accounts</h6>
+        <h2 class="mb-0">&euro;<?= number_format($accountsTotal, 2) ?></h2>
+        <small class="text-white-50"><?= count($accounts) ?> active account<?= count($accounts) !== 1 ? 's' : '' ?></small>
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Club Accounts</h5>
+      <?php if ($canEdit): ?>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+          <i class="bi bi-plus-lg"></i> Add Account
+        </button>
+      <?php endif; ?>
+    </div>
+    
+    <?php if (empty($accounts)): ?>
+      <div class="card">
+        <div class="card-body text-center py-5">
+          <h5>No accounts yet</h5>
+          <p class="text-muted">Add your club's bank accounts, cash floats, or other funds to track the total balance.</p>
+        </div>
+      </div>
+    <?php else: ?>
+      <div class="row g-3">
+        <?php foreach ($accounts as $account): ?>
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h5 class="mb-0"><?= e($account['account_name']) ?></h5>
+                    <small class="text-muted"><?= ucfirst($account['account_type']) ?></small>
+                  </div>
+                  <?php if ($canEdit): ?>
+                    <form method="post" onsubmit="return confirm('Delete this account?');" class="d-inline">
+                      <input type="hidden" name="action" value="delete_account">
+                      <input type="hidden" name="account_id" value="<?= $account['id'] ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
+                    </form>
+                  <?php endif; ?>
+                </div>
+                <h3 class="mb-2 <?= (float)$account['balance'] < 0 ? 'text-danger' : 'text-success' ?>">
+                  &euro;<?= number_format((float)$account['balance'], 2) ?>
+                </h3>
+                <?php if ($account['notes']): ?>
+                  <p class="text-muted small mb-2"><?= e($account['notes']) ?></p>
+                <?php endif; ?>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <small class="text-muted">Updated: <?= date('j M Y', strtotime($account['last_updated'])) ?></small>
+                  <?php if ($canEdit): ?>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal<?= $account['id'] ?>">
+                      Update
+                    </button>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <?php if ($canEdit): ?>
+          <div class="modal fade" id="updateModal<?= $account['id'] ?>" tabindex="-1">
+            <div class="modal-dialog modal-sm">
+              <div class="modal-content">
+                <form method="post">
+                  <input type="hidden" name="action" value="update_balance">
+                  <input type="hidden" name="account_id" value="<?= $account['id'] ?>">
+                  <div class="modal-header">
+                    <h6 class="modal-title">Update Balance</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <label class="form-label"><?= e($account['account_name']) ?></label>
+                    <div class="input-group">
+                      <span class="input-group-text">&euro;</span>
+                      <input type="number" name="balance" class="form-control" step="0.01" value="<?= number_format((float)$account['balance'], 2, '.', '') ?>" required>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100">Save</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+    
+    <?php if ($canEdit): ?>
+    <div class="modal fade" id="addAccountModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="post">
+            <input type="hidden" name="action" value="add_account">
+            <div class="modal-header">
+              <h5 class="modal-title">Add Account</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Account Name *</label>
+                <input type="text" name="account_name" class="form-control" required placeholder="e.g., AIB Current Account, Petty Cash">
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Type</label>
+                  <select name="account_type" class="form-select">
+                    <option value="bank">Bank Account</option>
+                    <option value="cash">Cash</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Current Balance (&euro;)</label>
+                  <input type="number" name="balance" class="form-control" step="0.01" value="0.00">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notes (optional)</label>
+                <textarea name="notes" class="form-control" rows="2" placeholder="e.g., Main club account"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Add Account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+    
+  <?php elseif ($showReport): ?>
     
     <div class="card mb-4">
       <div class="card-header bg-white d-flex justify-content-between align-items-center">

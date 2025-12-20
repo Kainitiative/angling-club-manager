@@ -81,12 +81,12 @@ Images are processed using PHP's GD library:
 - **Storage**: `uploads/logos/`, `uploads/gallery/`, and `uploads/catches/` directories
 - **Helper file**: `app/image_upload.php` contains `processLogoUpload()`, `processGalleryUpload()`, and `processCatchUpload()` functions
 
-## Club Accounts
-- **Account Tracking**: Track bank accounts, cash floats, PayPal, and other funds
-- **Balance Updates**: Treasurer can manually update current balances
+## Club Finances
+- **Transaction Tracking**: Log income and expenses by category (membership, sponsorship, equipment, etc.)
+- **Account Balances**: Track bank accounts, cash floats, PayPal - manual balance entry, no bank connection
+- **Summary Reports**: Monthly/yearly breakdown by category
 - **Total Overview**: Shows total across all active accounts
-- **No External Connections**: Simple manual entry - no bank API integration, no GDPR concerns
-- **Access Control**: Club owner, admin, or treasurer can manage accounts
+- **Access Control**: Committee members can view, chairperson/treasurer can edit
 
 ## Meeting Management
 - **Meetings**: Track committee, AGM, EGM, and general meetings with date/time/location
