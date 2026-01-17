@@ -87,8 +87,7 @@ function fetch_full_article_content(string $url): string {
         $html = @file_get_contents($url, false, $context);
         if (!$html) return "";
         
-        // Basic extraction - this is a simplified version
-        // In a real app, you'd use a library like Readability.php
+        // Basic extraction
         $doc = new DOMDocument();
         @$doc->loadHTML('<?xml encoding="UTF-8">' . $html);
         $xpath = new DOMXPath($doc);
@@ -112,7 +111,7 @@ function fetch_full_article_content(string $url): string {
         }
         
         if (!$content) {
-            $content = "Unable to extract full content. Please view the full article on the source website.";
+            return "";
         }
         
         // Sanitize - remove scripts and styles
@@ -122,10 +121,14 @@ function fetch_full_article_content(string $url): string {
         file_put_contents($cacheFile, $content);
         return $content;
     } catch (Exception $e) {
-        return "Error fetching content.";
+        return "";
     }
 }
 
+/**
+ * Get sample Irish fishing news for fallback display
+ */
+function get_ifi_fallback_news(int $limit = 3): array {
     $sampleNews = [
         [
             'title' => 'Spring Salmon Season Opens on River Moy',
