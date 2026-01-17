@@ -66,6 +66,7 @@ function get_club_admin_nav($clubId, $clubSlug, $userRole = 'admin') {
             'label' => 'Governance',
             'items' => [
                 ['id' => 'governance_hub', 'label' => 'Best Practices', 'url' => "/public/admin/governance.php?club_id=$clubId", 'icon' => 'shield-check'],
+                ['id' => 'documents', 'label' => 'Documents', 'url' => "/public/admin/documents.php?club_id=$clubId", 'icon' => 'file-earmark-text'],
                 ['id' => 'meetings', 'label' => 'Meetings', 'url' => "/public/admin/meetings.php?club_id=$clubId", 'icon' => 'calendar-event'],
                 ['id' => 'policies', 'label' => 'Policies', 'url' => "/public/admin/policies.php?club_id=$clubId", 'icon' => 'file-text'],
             ],
