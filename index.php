@@ -2,10 +2,14 @@
 declare(strict_types=1);
 
 require __DIR__ . '/app/bootstrap.php';
+require __DIR__ . '/app/rss_helper.php';
 
 $errors = [];
 $email = '';
 $isLoggedIn = (bool)current_user_id();
+
+// Fetch IFI news feed
+$ifiNews = fetch_rss_feed('https://fishinginireland.info/feed', 3);
 
 // If already logged in, redirect to dashboard
 if ($isLoggedIn) {
@@ -122,8 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <section class="features-section py-5">
   <div class="container">
-    <h2 class="text-center mb-5">Everything You Need to Run Your Club</h2>
-    <div class="row g-4">
+    <div class="row g-4 mb-5">
       <div class="col-md-4 text-center">
         <div class="feature-icon">👥</div>
         <h5>Member Management</h5>
@@ -140,6 +143,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="text-muted">Schedule club meetings, outings, and events with easy RSVP tracking.</p>
       </div>
     </div>
+
+    <?php if (!empty($ifiNews)): ?>
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white py-3 border-0">
+            <h5 class="mb-0 text-primary fw-bold">
+              <i class="bi bi-rss me-2"></i> Latest from Fishing in Ireland (IFI)
+            </h5>
+          </div>
+          <div class="list-group list-group-flush">
+            <?php foreach ($ifiNews as $news): ?>
+              <a href="<?= e($news['link']) ?>" target="_blank" class="list-group-item list-group-item-action py-3">
+                <div class="d-flex w-100 justify-content-between">
+                  <h6 class="mb-1 text-dark fw-bold"><?= e($news['title']) ?></h6>
+                  <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
+                </div>
+                <p class="mb-1 text-muted small"><?= e(mb_strimwidth($news['description'], 0, 150, "...")) ?></p>
+                <small class="text-primary">Read full story &rarr;</small>
+              </a>
+            <?php endforeach; ?>
+          </div>
+          <div class="card-footer bg-light text-center border-0 py-2">
+            <small class="text-muted">Official news from Inland Fisheries Ireland</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
   </div>
 </section>
 
