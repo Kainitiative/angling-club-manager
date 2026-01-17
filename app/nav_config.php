@@ -77,6 +77,12 @@ function get_club_admin_nav($clubId, $clubSlug, $userRole = 'admin') {
                 ['id' => 'reports', 'label' => 'Reports', 'url' => "/public/admin/finances.php?club_id=$clubId&report=1", 'icon' => 'graph-up'],
             ],
         ],
+        'partners' => [
+            'label' => 'Partners',
+            'items' => [
+                ['id' => 'sponsors', 'label' => 'Sponsors', 'url' => "/public/admin/sponsors.php?club_id=$clubId", 'icon' => 'building'],
+            ],
+        ],
         'settings' => [
             'label' => 'Settings',
             'items' => [

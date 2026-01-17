@@ -227,6 +227,10 @@ $stmt = $pdo->prepare("SELECT * FROM club_gallery WHERE club_id = ? ORDER BY dis
 $stmt->execute([$club['id']]);
 $clubGallery = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+$stmt = $pdo->prepare("SELECT * FROM sponsors WHERE club_id = ? ORDER BY display_order, name");
+$stmt->execute([$club['id']]);
+$clubSponsors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 $stmt = $pdo->prepare("
   SELECT n.*, u.name as author_name 
   FROM club_news n 
@@ -884,6 +888,43 @@ $billingPeriodLabels = [
                 Edit Policies
               </a>
             <?php endif; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($clubSponsors)): ?>
+        <div class="card info-card mb-4">
+          <div class="card-header bg-white">
+            <h6 class="mb-0">Our Sponsors & Supporters</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <?php foreach ($clubSponsors as $sponsor): ?>
+                <div class="col-6">
+                  <?php if ($sponsor['website']): ?>
+                    <a href="<?= e($sponsor['website']) ?>" target="_blank" class="text-decoration-none d-block text-center">
+                  <?php else: ?>
+                    <div class="text-center">
+                  <?php endif; ?>
+                    <?php if ($sponsor['logo_url']): ?>
+                      <img src="<?= e($sponsor['logo_url']) ?>" alt="<?= e($sponsor['name']) ?>" class="img-fluid mb-2" style="max-height: 60px;">
+                    <?php else: ?>
+                      <div class="bg-light rounded p-2 mb-2 d-flex align-items-center justify-content-center" style="height: 60px;">
+                        <i class="bi bi-building text-muted"></i>
+                      </div>
+                    <?php endif; ?>
+                    <div class="small text-dark"><?= e($sponsor['name']) ?></div>
+                    <?php if ($sponsor['company'] && $sponsor['company'] !== $sponsor['name']): ?>
+                      <div class="small text-muted"><?= e($sponsor['company']) ?></div>
+                    <?php endif; ?>
+                  <?php if ($sponsor['website']): ?>
+                    </a>
+                  <?php else: ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
           </div>
         </div>
       <?php endif; ?>
