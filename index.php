@@ -165,7 +165,7 @@ if ($isLoggedIn) {
         </div>
         
         <div class="row g-4">
-          <?php foreach ($ifiNews as $news): ?>
+          <?php foreach ($ifiNews as $index => $news): ?>
             <div class="col-md-4">
               <div class="card h-100 border-0 shadow-sm hover-up overflow-hidden">
                 <div class="card-body p-4">
@@ -174,7 +174,7 @@ if ($isLoggedIn) {
                     <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
                   </div>
                   <h5 class="card-title fw-bold mb-3">
-                    <a href="<?= e($news['link']) ?>" target="_blank" class="text-dark text-decoration-none stretched-link">
+                    <a href="#" class="text-dark text-decoration-none stretched-link" data-bs-toggle="modal" data-bs-target="#newsModal<?= $index ?>">
                       <?= e($news['title']) ?>
                     </a>
                   </h5>
@@ -183,6 +183,35 @@ if ($isLoggedIn) {
                   </p>
                   <div class="mt-auto d-flex align-items-center text-primary fw-bold small">
                     Read Story <i class="bi bi-arrow-right ms-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- News Modal -->
+            <div class="modal fade" id="newsModal<?= $index ?>" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                  <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body p-4 p-md-5 pt-0">
+                    <div class="mb-3">
+                      <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">National Update</span>
+                      <small class="text-muted ms-2"><?= date('d M Y', $news['timestamp']) ?></small>
+                    </div>
+                    <h2 class="fw-bold mb-4"><?= e($news['title']) ?></h2>
+                    <div class="news-content text-muted mb-4 lead" style="font-size: 1.1rem; line-height: 1.8;">
+                      <?= nl2br(e($news['description'])) ?>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pt-4 border-top">
+                      <div class="text-muted small">
+                        Source: <span class="fw-bold">Inland Fisheries Ireland</span>
+                      </div>
+                      <a href="<?= e($news['link']) ?>" target="_blank" class="btn btn-primary px-4 py-2">
+                        View Full Article on IFI <i class="bi bi-box-arrow-up-right ms-2"></i>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
