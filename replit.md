@@ -111,6 +111,30 @@ User Roles:
 - **Season Leaderboards**: Rankings with points, weights, wins, and podiums
 - **Member Stats Dashboard**: Personal fishing statistics displayed on user dashboard
 
+## Future Exploration & Research (from Clubmate & ClubNest)
+- **Junior & Parent Management**: 
+    - Parent-managed accounts (one parent, multiple children)
+    - Automated consent forms and medical notes tracking for coaching
+- **Match Day Operations**:
+    - Digital peg draws (randomizer for match positions)
+    - Live weigh-in capture and instant leaderboard updates
+- **Commercial & Bookings**:
+    - Day ticket sales with automated capacity limits
+    - Swim (fishing spot) or boat bookings
+- **Field Tools**:
+    - Bailiff App for bankside membership verification (QR/Photo)
+    - Bankside card payment processing
+- **Hardware & Automation**:
+    - Physical ID card printing service
+    - Access control integration (gate codes/smart locks)
+    - Accounting sync (e.g., Xero)
+- **Education**:
+    - Structured coaching courses with quizzes and certificates
+    - Coaching progress logs for junior development
+- **Marketing**:
+    - SEO-optimized event snippets and "What's On" global calendar
+    - Club merchandise shop integration
+
 ## Image Uploads
 Images are processed using PHP's GD library:
 - **Logo uploads**: Resized to max 200x200px, saved as PNG (preserves transparency) or JPEG
