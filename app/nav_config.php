@@ -14,6 +14,7 @@ function get_member_nav($pdo, $userId) {
         'personal' => [
             ['id' => 'messages', 'label' => 'Messages', 'url' => '/public/messages.php', 'icon' => 'envelope', 'badge' => 'messages'],
             ['id' => 'notifications', 'label' => 'Notifications', 'url' => '/public/notifications.php', 'icon' => 'bell', 'badge' => 'notifications'],
+            ['id' => 'juniors', 'label' => 'Junior Members', 'url' => '/public/juniors.php', 'icon' => 'people'],
             ['id' => 'tasks', 'label' => 'My Tasks', 'url' => '/public/tasks.php', 'icon' => 'check2-square'],
         ],
         'account' => [
