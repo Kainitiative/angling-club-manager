@@ -89,7 +89,8 @@
         document.head.appendChild(style);
     }
 
-    document.querySelectorAll('.btn-primary, .btn-success, .btn-danger, .btn-warning').forEach(btn => {
+    // Only apply ripple to buttons with explicit .btn-ripple class
+    document.querySelectorAll('.btn-ripple').forEach(btn => {
         btn.style.position = 'relative';
         btn.style.overflow = 'hidden';
         btn.addEventListener('click', createRipple);
@@ -309,12 +310,13 @@
     }
 
     // ========================================
-    // 14. Back to Top Button
+    // 14. Back to Top Button (opt-in via data attribute or existing element)
     // ========================================
     const scrollThreshold = 300;
     let backToTopBtn = document.querySelector('.back-to-top');
     
-    if (!backToTopBtn) {
+    // Only create if page explicitly opts in via body data attribute
+    if (!backToTopBtn && document.body.dataset.backToTop === 'true') {
         backToTopBtn = document.createElement('button');
         backToTopBtn.className = 'back-to-top btn btn-primary shadow';
         backToTopBtn.innerHTML = '<i class="bi bi-arrow-up"></i>';
@@ -338,19 +340,21 @@
         document.body.appendChild(backToTopBtn);
     }
 
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > scrollThreshold) {
-            backToTopBtn.style.opacity = '1';
-            backToTopBtn.style.visibility = 'visible';
-        } else {
-            backToTopBtn.style.opacity = '0';
-            backToTopBtn.style.visibility = 'hidden';
-        }
-    }, { passive: true });
+    if (backToTopBtn) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > scrollThreshold) {
+                backToTopBtn.style.opacity = '1';
+                backToTopBtn.style.visibility = 'visible';
+            } else {
+                backToTopBtn.style.opacity = '0';
+                backToTopBtn.style.visibility = 'hidden';
+            }
+        }, { passive: true });
 
-    backToTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 
     // ========================================
     // 15. Loading State Handler

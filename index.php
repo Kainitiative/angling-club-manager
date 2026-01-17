@@ -45,6 +45,8 @@ if ($isLoggedIn) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Angling Club Manager - Find & Manage Fishing Clubs</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="/assets/css/enhancements.css" rel="stylesheet">
   <style>
     .hero {
       background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
@@ -424,5 +426,6 @@ if ($isLoggedIn) {
 <?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/enhancements.js"></script>
 </body>
 </html>
