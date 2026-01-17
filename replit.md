@@ -160,6 +160,11 @@ User Roles:
     - Officer Availability: Future capability for officers to toggle "On Duty / Off Duty" status via a mobile dashboard.
     - IFI News: Integration of official IFI RSS feeds and regulatory rules.
 
+## RSS Feeds (National Angling Data)
+- **Fishing in Ireland (Main Feed)**: `https://fishinginireland.info/feed`
+- **Irish Specimen Fish Committee (ISFC)**: `https://specimenfish.ie/feed`
+- **Angling Council of Ireland (News)**: `https://www.anglingcouncil.ie/feed` (if available, check for updates)
+
 ## Image Uploads
 Images are processed using PHP's GD library:
 - **Logo uploads**: Resized to max 200x200px, saved as PNG (preserves transparency) or JPEG
