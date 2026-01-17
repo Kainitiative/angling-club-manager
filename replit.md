@@ -125,6 +125,10 @@ User Roles:
 - **Competition Seasons/Leagues**: Group competitions into seasons with cumulative standings
 - **Season Leaderboards**: Rankings with points, weights, wins, and podiums
 - **Member Stats Dashboard**: Personal fishing statistics displayed on user dashboard
+- **Specimen Wishlist & Targeting**:
+    - Species Selection: Users can pick a target species to see official ISFC specimen weights and record info.
+    - Wishlist: Create a personal list of specimen awards to target.
+    - Seasonality Guides: App presents the best dates and locations for the highest chance of a specimen catch.
 
 ## Future Exploration & Research (from Clubmate & ClubNest)
 - **Junior & Parent Management**: 
