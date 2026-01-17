@@ -41,6 +41,21 @@ club_admin_shell_start($pdo, $club, ['title' => 'Members', 'page' => $currentPag
 club_admin_shell_end();
 ```
 
+## Angling Affiliations (National Governing Bodies)
+The platform tracks and integrates with the **Angling Council of Ireland (ACI)** and its member federations:
+
+### ACI Federations & Fishing Styles:
+- **Irish Federation of Sea Anglers (IFSA)**: Focuses on **Sea Angling** (Boat and Shore).
+- **Irish Federation of Pike Angling Clubs (IFPAC)**: Dedicated to **Pike/Predator Angling**.
+- **National Coarse Fishing Federation of Ireland (NCFFI)**: Governing body for **Coarse & Predator Angling** (traditional match fishing).
+- **Salmon & Sea Trout Recreational Anglers of Ireland (SSTRAI)**: Focuses on **Game Fishing** (Salmon and Sea Trout).
+- **Trout Anglers Federation of Ireland (TAFI)**: Governing body for **Trout Angling (Fly Fishing)**.
+
+### Integration Vision:
+- **Affiliation Tracking**: Clubs can select their affiliated federation during signup.
+- **Unified Standards**: Use ACI-approved coaching and safety standards for junior development.
+- **National Competitions**: Support for federation-level competition logging and results.
+
 ## Account Types
 The platform supports multiple entity types, each with a tailored profile:
 - **Angling Club**: Standard membership-based club.
