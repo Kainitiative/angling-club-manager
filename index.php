@@ -201,8 +201,14 @@ if ($isLoggedIn) {
                       <small class="text-muted ms-2"><?= date('d M Y', $news['timestamp']) ?></small>
                     </div>
                     <h2 class="fw-bold mb-4"><?= e($news['title']) ?></h2>
-                    <div class="news-content text-muted mb-4 lead" style="font-size: 1.1rem; line-height: 1.8;">
-                      <?= nl2br(e($news['description'])) ?>
+                    <div class="news-content text-muted mb-4" style="font-size: 1.1rem; line-height: 1.8;">
+                      <?php 
+                        // For fallback news, we just show the description
+                        // In a live environment with a real URL, we could attempt a full fetch
+                        // but since the server is often blocked by bot protection, we stick to the clean RSS summary
+                        // which is usually substantial on these feeds.
+                        echo nl2br(e($news['description'])); 
+                      ?>
                     </div>
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pt-4 border-top">
                       <div class="text-muted small">

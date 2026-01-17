@@ -63,9 +63,69 @@ function fetch_rss_feed(string $url, int $limit = 5, int $cacheSeconds = 3600, b
 }
 
 /**
- * Get sample Irish fishing news for fallback display
+ * Fetch the full content of an article from a URL
+ * 
+ * @param string $url The article URL
+ * @return string
  */
-function get_ifi_fallback_news(int $limit = 3): array {
+function fetch_full_article_content(string $url): string {
+    $cacheFile = sys_get_temp_dir() . '/article_cache_' . md5($url) . '.html';
+    
+    // Check cache (24 hours)
+    if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+        return file_get_contents($cacheFile);
+    }
+    
+    try {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            ]
+        ]);
+        
+        $html = @file_get_contents($url, false, $context);
+        if (!$html) return "";
+        
+        // Basic extraction - this is a simplified version
+        // In a real app, you'd use a library like Readability.php
+        $doc = new DOMDocument();
+        @$doc->loadHTML('<?xml encoding="UTF-8">' . $html);
+        $xpath = new DOMXPath($doc);
+        
+        // Try to find common article containers
+        $queries = [
+            "//article",
+            "//div[contains(@class, 'entry-content')]",
+            "//div[contains(@class, 'post-content')]",
+            "//div[contains(@class, 'article-content')]",
+            "//main"
+        ];
+        
+        $content = "";
+        foreach ($queries as $query) {
+            $nodes = $xpath->query($query);
+            if ($nodes->length > 0) {
+                $content = $doc->saveHTML($nodes->item(0));
+                break;
+            }
+        }
+        
+        if (!$content) {
+            $content = "Unable to extract full content. Please view the full article on the source website.";
+        }
+        
+        // Sanitize - remove scripts and styles
+        $content = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', "", $content);
+        $content = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', "", $content);
+        
+        file_put_contents($cacheFile, $content);
+        return $content;
+    } catch (Exception $e) {
+        return "Error fetching content.";
+    }
+}
+
     $sampleNews = [
         [
             'title' => 'Spring Salmon Season Opens on River Moy',
