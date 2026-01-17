@@ -287,32 +287,8 @@ member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'sectio
       </p>
     </div>
 
-    <h6 class="text-muted text-uppercase small fw-bold mb-3">Quick Links</h6>
-    
-    <?php if (!$isInAnyClub): ?>
-    <a href="/public/clubs.php" class="quick-link mb-2">
-      <div class="quick-link-icon bg-primary bg-opacity-10 text-primary">
-        <i class="bi bi-people"></i>
-      </div>
-      <div>
-        <div class="fw-medium">Browse Clubs</div>
-        <small class="text-muted">Find and join angling clubs</small>
-      </div>
-    </a>
-    <?php endif; ?>
-
-    <a href="/public/competitions.php" class="quick-link mb-2">
-      <div class="quick-link-icon bg-warning bg-opacity-10 text-warning">
-        <i class="bi bi-trophy"></i>
-      </div>
-      <div>
-        <div class="fw-medium">Browse Competitions</div>
-        <small class="text-muted">Find open fishing events</small>
-      </div>
-    </a>
-
     <?php if (!$hasOwnClub): ?>
-    <a href="/public/create_club.php" class="quick-link mb-2">
+    <a href="/public/create_club.php" class="quick-link mb-3">
       <div class="quick-link-icon bg-success bg-opacity-10 text-success">
         <i class="bi bi-plus-circle"></i>
       </div>

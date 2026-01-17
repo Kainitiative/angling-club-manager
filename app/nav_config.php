@@ -5,12 +5,25 @@
  */
 
 function get_member_nav($pdo, $userId) {
+    $hasOwnClub = false;
+    try {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM club_admins WHERE user_id = ? AND admin_role = 'owner'");
+        $stmt->execute([$userId]);
+        $hasOwnClub = (int)$stmt->fetchColumn() > 0;
+    } catch (Exception $e) {}
+    
+    $mainNav = [
+        ['id' => 'home', 'label' => 'Dashboard', 'url' => '/public/dashboard.php', 'icon' => 'house'],
+        ['id' => 'clubs', 'label' => 'Browse Clubs', 'url' => '/public/clubs.php', 'icon' => 'people'],
+        ['id' => 'competitions', 'label' => 'Competitions', 'url' => '/public/competitions.php', 'icon' => 'trophy'],
+    ];
+    
+    if (!$hasOwnClub) {
+        $mainNav[] = ['id' => 'create_club', 'label' => 'Create a Club', 'url' => '/public/create_club.php', 'icon' => 'plus-circle'];
+    }
+    
     $nav = [
-        'main' => [
-            ['id' => 'home', 'label' => 'Dashboard', 'url' => '/public/dashboard.php', 'icon' => 'house'],
-            ['id' => 'clubs', 'label' => 'Browse Clubs', 'url' => '/public/clubs.php', 'icon' => 'people'],
-            ['id' => 'competitions', 'label' => 'Competitions', 'url' => '/public/competitions.php', 'icon' => 'trophy'],
-        ],
+        'main' => $mainNav,
         'personal' => [
             ['id' => 'messages', 'label' => 'Messages', 'url' => '/public/messages.php', 'icon' => 'envelope', 'badge' => 'messages'],
             ['id' => 'notifications', 'label' => 'Notifications', 'url' => '/public/notifications.php', 'icon' => 'bell', 'badge' => 'notifications'],
