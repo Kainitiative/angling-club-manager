@@ -420,9 +420,9 @@ $billingPeriodLabels = [
         <?php endif; ?>
       </div>
       <div class="col">
-        <h1 class="display-5 fw-bold mb-2"><?= e($heroTitle ?: $club['name']) ?></h1>
-        <?php if ($heroTagline): ?>
-          <p class="lead mb-2 opacity-90"><?= e($heroTagline) ?></p>
+        <h1 class="display-5 fw-bold mb-2"><?= e($club['name']) ?></h1>
+        <?php if (!empty($club['tagline'])): ?>
+          <p class="lead mb-2 opacity-90"><?= e($club['tagline']) ?></p>
         <?php endif; ?>
         <?php if ($club['town'] || $club['city']): ?>
           <p class="mb-0 opacity-75">

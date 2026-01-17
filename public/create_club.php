@@ -40,8 +40,18 @@ $fishingStyleOptions = [
   'lure' => 'Lure Fishing',
 ];
 
+$clubTypeOptions = [
+  'angling_club' => 'Angling Club',
+  'syndicate' => 'Syndicate',
+  'commercial_fishery' => 'Commercial Fishery',
+  'angling_guide' => 'Angling Guide',
+  'charter_boat' => 'Charter Boat',
+];
+
 $formData = [
   'name' => '',
+  'club_type' => 'angling_club',
+  'tagline' => '',
   'address_line1' => '',
   'address_line2' => '',
   'town' => '',
@@ -53,8 +63,10 @@ $formData = [
   'contact_email' => '',
 ];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $formData['name'] = trim($_POST['name'] ?? '');
+  $formData['club_type'] = trim($_POST['club_type'] ?? 'angling_club');
+  $formData['tagline'] = trim($_POST['tagline'] ?? '');
   $formData['address_line1'] = trim($_POST['address_line1'] ?? '');
   $formData['address_line2'] = trim($_POST['address_line2'] ?? '');
   $formData['town'] = trim($_POST['town'] ?? '');
@@ -115,8 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           name, slug, contact_email, about_text,
           address_line1, address_line2, town, county, postcode, country,
           location_text, city, fishing_styles,
-          trial_start_date, trial_end_date, access_until
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          trial_start_date, trial_end_date, access_until,
+          club_type, tagline
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ");
       $stmt->execute([
         $formData['name'],
@@ -134,7 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fishingStylesJson,
         $today,
         $trialEnd,
-        $trialEnd
+        $trialEnd,
+        $formData['club_type'],
+        $formData['tagline'] ?: null
       ]);
 
       $newClubId = $pdo->lastInsertId();
@@ -243,8 +258,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="card-body">
               <div class="mb-3">
-                <label class="form-label">Club Name <span class="text-danger">*</span></label>
+                <label class="form-label">Type of Entity <span class="text-danger">*</span></label>
+                <select name="club_type" class="form-select" required>
+                  <?php foreach ($clubTypeOptions as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= $formData['club_type'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Name <span class="text-danger">*</span></label>
                 <input type="text" name="name" class="form-control" value="<?= e($formData['name']) ?>" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Tagline</label>
+                <input type="text" name="tagline" class="form-control" value="<?= e($formData['tagline']) ?>" placeholder="e.g. Expert Brown Trout Guiding on the River Boyne">
               </div>
               
               <div class="mb-3">

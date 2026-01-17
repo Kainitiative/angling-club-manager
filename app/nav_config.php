@@ -87,10 +87,12 @@ function get_public_nav($isLoggedIn = false) {
     if ($isLoggedIn) {
         return [
             ['label' => 'Dashboard', 'url' => '/public/dashboard.php', 'class' => 'btn-outline-light'],
+            ['label' => 'Guides & Boats', 'url' => '/public/clubs.php?type=commercial', 'class' => 'btn-outline-light'],
             ['label' => 'Logout', 'url' => '/public/auth/logout.php', 'class' => 'btn-light'],
         ];
     }
     return [
+        ['label' => 'Guides & Boats', 'url' => '/public/clubs.php?type=commercial', 'class' => 'btn-outline-light'],
         ['label' => 'Log In', 'url' => '/', 'class' => 'btn-outline-light', 'modal' => 'loginModal'],
         ['label' => 'Sign Up', 'url' => '/public/auth/register.php', 'class' => 'btn-primary'],
     ];

@@ -41,10 +41,20 @@ club_admin_shell_start($pdo, $club, ['title' => 'Members', 'page' => $currentPag
 club_admin_shell_end();
 ```
 
-## Technical Stack
-- **Language**: PHP 8.4
-- **Database**: MySQL/MariaDB (primary), with PostgreSQL support for Replit
-- **Server**: PHP built-in development server
+## Account Types
+The platform supports multiple entity types, each with a tailored profile:
+- **Angling Club**: Standard membership-based club.
+- **Syndicate**: Private, invite-only fishing groups.
+- **Commercial Fishery**: Business-run fishing venues.
+- **Angling Guide**: Professional fishing instructors/coaches.
+- **Charter Boat**: Skippers providing sea angling trips.
+
+## Branding & Advertising
+Entity profiles serve as microsites/advertisements:
+- Customizable colors and logo
+- Social media links (Facebook, Instagram, etc.)
+- Taglines and "About" sections
+- Display settings for gallery, catches, and news
 
 ## Running the Application
 The app runs via PHP's built-in server on port 5000:
