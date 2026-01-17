@@ -89,6 +89,16 @@ if ($isLoggedIn) {
       font-size: 1.5rem;
       margin: 0 auto 1rem;
     }
+    .hover-up {
+      transition: all 0.3s ease;
+    }
+    .hover-up:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+    }
+    .tracking-wider {
+      letter-spacing: 0.1em;
+    }
   </style>
 </head>
 <body>
@@ -146,29 +156,42 @@ if ($isLoggedIn) {
     </div>
 
     <?php if (!empty($ifiNews)): ?>
-    <div class="row justify-content-center">
-      <div class="col-lg-10">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header bg-white py-3 border-0">
-            <h5 class="mb-0 text-primary fw-bold">
-              <i class="bi bi-rss me-2"></i> Latest from Fishing in Ireland (IFI)
-            </h5>
-          </div>
-          <div class="list-group list-group-flush">
-            <?php foreach ($ifiNews as $news): ?>
-              <a href="<?= e($news['link']) ?>" target="_blank" class="list-group-item list-group-item-action py-3">
-                <div class="d-flex w-100 justify-content-between">
-                  <h6 class="mb-1 text-dark fw-bold"><?= e($news['title']) ?></h6>
-                  <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
+    <div class="row justify-content-center mt-4">
+      <div class="col-lg-12">
+        <div class="text-center mb-5">
+          <span class="text-primary text-uppercase fw-bold tracking-wider small">National Angling Updates</span>
+          <h2 class="mt-2 fw-bold">From Around the Waters</h2>
+          <div class="bg-primary mx-auto mt-3" style="width: 50px; height: 3px;"></div>
+        </div>
+        
+        <div class="row g-4">
+          <?php foreach ($ifiNews as $news): ?>
+            <div class="col-md-4">
+              <div class="card h-100 border-0 shadow-sm hover-up overflow-hidden">
+                <div class="card-body p-4">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">IFI News</span>
+                    <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
+                  </div>
+                  <h5 class="card-title fw-bold mb-3">
+                    <a href="<?= e($news['link']) ?>" target="_blank" class="text-dark text-decoration-none stretched-link">
+                      <?= e($news['title']) ?>
+                    </a>
+                  </h5>
+                  <p class="card-text text-muted small mb-4">
+                    <?= e(mb_strimwidth($news['description'], 0, 120, "...")) ?>
+                  </p>
+                  <div class="mt-auto d-flex align-items-center text-primary fw-bold small">
+                    Read Story <i class="bi bi-arrow-right ms-2"></i>
+                  </div>
                 </div>
-                <p class="mb-1 text-muted small"><?= e(mb_strimwidth($news['description'], 0, 150, "...")) ?></p>
-                <small class="text-primary">Read full story &rarr;</small>
-              </a>
-            <?php endforeach; ?>
-          </div>
-          <div class="card-footer bg-light text-center border-0 py-2">
-            <small class="text-muted">Official news from Inland Fisheries Ireland</small>
-          </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+        
+        <div class="text-center mt-5">
+          <p class="small text-muted mb-0">Official updates curated from Inland Fisheries Ireland & national partners.</p>
         </div>
       </div>
     </div>
