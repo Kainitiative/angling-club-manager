@@ -20,6 +20,7 @@ if ($isLoggedIn) {
 
 $filterCountry = $_GET['country'] ?? $userCountry;
 $filterTown = $_GET['town'] ?? '';
+$filterType = $_GET['type'] ?? '';
 
 $stmt = $pdo->query("SELECT DISTINCT country FROM clubs WHERE country IS NOT NULL AND country != '' AND is_public = 1 ORDER BY country");
 $countries = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -47,6 +48,13 @@ if ($filterCountry !== '') {
 if ($filterTown !== '') {
   $sql .= " AND c.town = ?";
   $params[] = $filterTown;
+}
+
+if ($filterType === 'commercial') {
+  $sql .= " AND c.club_type IN ('commercial_fishery', 'angling_guide', 'charter_boat')";
+} elseif ($filterType !== '') {
+  $sql .= " AND c.club_type = ?";
+  $params[] = $filterType;
 }
 
 $sql .= " ORDER BY c.name ASC LIMIT 50";
@@ -157,6 +165,16 @@ $fishingStyleLabels = [
               </select>
             </div>
             <div class="col-md-4">
+              <label class="form-label">Type</label>
+              <select name="type" class="form-select" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                <option value="angling_club" <?= $filterType === 'angling_club' ? 'selected' : '' ?>>Angling Club</option>
+                <option value="syndicate" <?= $filterType === 'syndicate' ? 'selected' : '' ?>>Syndicate</option>
+                <option value="commercial" <?= $filterType === 'commercial' ? 'selected' : '' ?>>Guides & Boats</option>
+                <option value="commercial_fishery" <?= $filterType === 'commercial_fishery' ? 'selected' : '' ?>>Fishery</option>
+              </select>
+            </div>
+            <div class="col-md-4">
               <button type="submit" class="btn btn-primary">Filter</button>
               <a href="/public/clubs.php" class="btn btn-outline-secondary">Clear</a>
             </div>
@@ -192,6 +210,9 @@ $fishingStyleLabels = [
                   <?php endif; ?>
                   <div>
                     <h5 class="card-title mb-1 text-dark"><?= e($club['name']) ?></h5>
+                    <?php if (!empty($club['tagline'])): ?>
+                      <div class="text-primary small mb-1"><?= e($club['tagline']) ?></div>
+                    <?php endif; ?>
                     <?php if ($club['town'] || $club['city']): ?>
                       <small class="text-muted">
                         <?= e($club['town'] ?: $club['city']) ?><?= $club['county'] ? ', ' . e($club['county']) : '' ?>
