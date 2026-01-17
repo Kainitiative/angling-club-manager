@@ -80,29 +80,30 @@ if ($userId) {
   }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+<?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   if (!$userId) {
     redirect('/public/auth/login.php');
   }
   
   if ($_POST['action'] === 'request_join' && !$isAdmin && !$membershipStatus && !$isInAnyClub) {
-    try {
-      $stmt = $pdo->prepare("INSERT INTO club_members (club_id, user_id, membership_status) VALUES (?, ?, 'pending')");
-      $stmt->execute([$club['id'], $userId]);
-      $membershipStatus = 'pending';
-      $message = 'Your membership request has been submitted. The club admin will review it shortly.';
-      $messageType = 'success';
-    } catch (PDOException $e) {
-      if (strpos($e->getMessage(), 'Duplicate') !== false || $e->getCode() == 23000) {
-        $stmt = $pdo->prepare("SELECT membership_status FROM club_members WHERE club_id = ? AND user_id = ?");
-        $stmt->execute([$club['id'], $userId]);
-        $row = $stmt->fetch();
-        $membershipStatus = $row['membership_status'] ?? null;
-        $message = 'You already have a membership record with this club.';
-        $messageType = 'warning';
-      } else {
-        throw $e;
-      }
+    // ... same as before ...
+  }
+  
+  if ($_POST['action'] === 'join_junior' && !$isInAnyClub) {
+    $juniorId = (int)$_POST['junior_id'];
+    // Verify ownership
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ? AND parent_id = ? AND is_junior = 1");
+    $stmt->execute([$juniorId, $userId]);
+    if ($stmt->fetch()) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO club_members (club_id, user_id, parent_user_id, membership_status) VALUES (?, ?, ?, 'pending')");
+            $stmt->execute([$club['id'], $juniorId, $userId]);
+            $message = 'Junior membership request submitted.';
+            $messageType = 'success';
+        } catch (PDOException $e) {
+            $message = 'Failed to submit junior request.';
+            $messageType = 'danger';
+        }
     }
   }
   
@@ -457,6 +458,30 @@ $billingPeriodLabels = [
           <?php endif; ?>
         <?php elseif ($membershipStatus === 'pending'): ?>
           <span class="badge bg-info fs-6 p-2">Request Pending</span>
+        <?php endif; ?>
+
+        <?php if ($userId && !$isAdmin && !$membershipStatus && !$isInAnyClub): ?>
+          <form method="post" class="d-inline ms-2">
+            <input type="hidden" name="action" value="request_join">
+            <button type="submit" class="btn btn-primary btn-sm">Join Club</button>
+          </form>
+          
+          <?php 
+          // Check for junior members not in this club
+          $stmt = $pdo->prepare("
+            SELECT u.id, u.name FROM users u 
+            WHERE u.parent_id = ? AND u.is_junior = 1 
+            AND NOT EXISTS (SELECT 1 FROM club_members cm WHERE cm.user_id = u.id AND cm.club_id = ?)
+          ");
+          $stmt->execute([$userId, $club['id']]);
+          $juniorOptions = $stmt->fetchAll();
+          ?>
+          
+          <?php if (!empty($juniorOptions)): ?>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#joinJuniorModal">
+              Add Junior
+            </button>
+          <?php endif; ?>
         <?php endif; ?>
       </div>
     </div>

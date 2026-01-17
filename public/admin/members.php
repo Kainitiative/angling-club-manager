@@ -95,9 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
 }
 
 $stmt = $pdo->prepare("
-  SELECT cm.*, u.id as user_id, u.name, u.email, u.profile_picture_url, u.phone, u.town, u.city, u.country
+  SELECT cm.*, u.id as user_id, u.name, u.email, u.profile_picture_url, u.phone, u.town, u.city, u.country,
+         p.name as parent_name, u.is_junior
   FROM club_members cm
   JOIN users u ON cm.user_id = u.id
+  LEFT JOIN users p ON cm.parent_user_id = p.id
   WHERE cm.club_id = ?
   ORDER BY 
     CASE cm.membership_status 
@@ -106,15 +108,7 @@ $stmt = $pdo->prepare("
       WHEN 'suspended' THEN 3 
       WHEN 'expired' THEN 4 
     END,
-    CASE cm.committee_role
-      WHEN 'chairperson' THEN 1
-      WHEN 'secretary' THEN 2
-      WHEN 'treasurer' THEN 3
-      WHEN 'pro' THEN 4
-      WHEN 'safety_officer' THEN 5
-      WHEN 'child_liaison_officer' THEN 6
-      ELSE 10
-    END,
+    u.is_junior DESC,
     cm.created_at DESC
 ");
 $stmt->execute([$clubId]);
@@ -222,7 +216,17 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                   <img src="<?= e($avatar) ?>" alt="" class="member-avatar">
                 </div>
                 <div class="col">
-                  <h5 class="mb-1"><?= e($member['name']) ?></h5>
+                  <h5 class="mb-1">
+                    <?= e($member['name']) ?>
+                    <?php if ($member['is_junior']): ?>
+                      <span class="badge bg-info">Junior</span>
+                    <?php endif; ?>
+                  </h5>
+                  <?php if ($member['is_junior'] && $member['parent_name']): ?>
+                    <div class="text-primary small fw-bold mb-1">
+                      Parent/Guardian: <?= e($member['parent_name']) ?>
+                    </div>
+                  <?php endif; ?>
                   <div class="text-muted small">
                     <?= e($member['email']) ?>
                     <?php if ($member['phone']): ?>
@@ -277,6 +281,9 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
               <div class="col">
                 <h5 class="mb-1">
                   <?= e($member['name']) ?>
+                  <?php if ($member['is_junior']): ?>
+                    <span class="badge bg-info">Junior</span>
+                  <?php endif; ?>
                   <?php if ($member['membership_status'] === 'active'): ?>
                     <span class="badge bg-success">Active</span>
                   <?php elseif ($member['membership_status'] === 'suspended'): ?>
@@ -288,6 +295,11 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                     <span class="badge committee-badge <?= $roleBadgeColor ?>"><?= e($committeeRoles[$currentRole]) ?></span>
                   <?php endif; ?>
                 </h5>
+                <?php if ($member['is_junior'] && $member['parent_name']): ?>
+                  <div class="text-primary small fw-bold mb-1">
+                    Parent/Guardian: <?= e($member['parent_name']) ?>
+                  </div>
+                <?php endif; ?>
                 <div class="text-muted small">
                   <?= e($member['email']) ?>
                   <?php if ($member['phone']): ?>
