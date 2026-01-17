@@ -29,6 +29,7 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **Meeting Management**: Track meetings, minutes, decisions, and assign tasks with associated access controls.
 - **Member Engagement**: Catch logging (species, weight, length, photos), personal bests, club records, Catch of the Month, competition seasons, leaderboards, and personal statistics dashboards.
 - **Sponsors & Supporters**: Clubs can add sponsors/supporters with name, company, logo, website, and description. Sponsors display on public club profiles. Competitions can also have their own sponsors that display on competition results pages. Managed via `public/admin/sponsors.php` for clubs and directly on competition cards for competitions.
+- **Governance Hub**: Best practice guides for club committees based on Sport Ireland's Governance Code and NCFFI guidelines. Covers the 5 governance principles, committee role descriptions, AGM/meeting guidance, safeguarding requirements, financial controls, and external resources. Accessible only to committee members via `public/admin/governance.php`.
 - **Angling Affiliations**: Tracking and potential integration with national bodies like the Angling Council of Ireland and its federations, with a vision for affiliation tracking and support for unified standards and national competitions.
 - **RSS Feed Personalization (Planned)**: Strategy to filter and prioritize RSS feed content based on user-defined favorite fishing styles.
 
