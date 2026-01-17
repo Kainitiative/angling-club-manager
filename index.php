@@ -11,11 +11,6 @@ $isLoggedIn = (bool)current_user_id();
 // Fetch IFI news feed
 $ifiNews = fetch_rss_feed('https://fishinginireland.info/feed', 3);
 
-// If already logged in, redirect to dashboard
-if ($isLoggedIn) {
-  redirect('/public/dashboard.php');
-}
-
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = strtolower(trim((string)($_POST['email'] ?? '')));
@@ -31,6 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['user_id'] = (int)$user['id'];
     redirect('/public/dashboard.php');
   }
+}
+
+// If already logged in, redirect to dashboard
+// (Moved AFTER feed fetch for non-members, but actually if they are logged in they go to dashboard)
+if ($isLoggedIn) {
+  redirect('/public/dashboard.php');
 }
 
 ?>
