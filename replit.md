@@ -28,6 +28,7 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **Financial Tracking**: Income/expense logging by category, manual account balance tracking, summary reports, and access control.
 - **Meeting Management**: Track meetings, minutes, decisions, and assign tasks with associated access controls.
 - **Member Engagement**: Catch logging (species, weight, length, photos), personal bests, club records, Catch of the Month, competition seasons, leaderboards, and personal statistics dashboards.
+- **Sponsors & Supporters**: Clubs can add sponsors/supporters with name, company, logo, website, and description. Sponsors display on public club profiles. Competitions can also have their own sponsors that display on competition results pages. Managed via `public/admin/sponsors.php` for clubs and directly on competition cards for competitions.
 - **Angling Affiliations**: Tracking and potential integration with national bodies like the Angling Council of Ireland and its federations, with a vision for affiliation tracking and support for unified standards and national competitions.
 - **RSS Feed Personalization (Planned)**: Strategy to filter and prioritize RSS feed content based on user-defined favorite fishing styles.
 

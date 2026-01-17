@@ -54,6 +54,10 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$competitionId]);
 $results = $stmt->fetchAll();
+
+$stmt = $pdo->prepare("SELECT * FROM sponsors WHERE competition_id = ? ORDER BY display_order, name");
+$stmt->execute([$competitionId]);
+$competitionSponsors = $stmt->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -175,6 +179,39 @@ $results = $stmt->fetchAll();
       <?php endif; ?>
     </div>
   </div>
+  
+  <?php if (!empty($competitionSponsors)): ?>
+    <div class="card mt-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0">Sponsored By</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-4 justify-content-center align-items-center">
+          <?php foreach ($competitionSponsors as $sponsor): ?>
+            <div class="col-6 col-md-3 text-center">
+              <?php if ($sponsor['website']): ?>
+                <a href="<?= e($sponsor['website']) ?>" target="_blank" class="text-decoration-none">
+              <?php endif; ?>
+                <?php if ($sponsor['logo_url']): ?>
+                  <img src="<?= e($sponsor['logo_url']) ?>" alt="<?= e($sponsor['name']) ?>" class="img-fluid mb-2" style="max-height: 80px;">
+                <?php else: ?>
+                  <div class="bg-light rounded p-3 mb-2 d-inline-flex align-items-center justify-content-center" style="height: 80px; width: 100%;">
+                    <span class="fw-bold text-muted"><?= e($sponsor['name']) ?></span>
+                  </div>
+                <?php endif; ?>
+                <div class="small"><?= e($sponsor['name']) ?></div>
+                <?php if ($sponsor['company'] && $sponsor['company'] !== $sponsor['name']): ?>
+                  <div class="small text-muted"><?= e($sponsor['company']) ?></div>
+                <?php endif; ?>
+              <?php if ($sponsor['website']): ?>
+                </a>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
   
   <div class="text-center mt-4">
     <a href="/public/club.php?slug=<?= e($competition['club_slug']) ?>" class="btn btn-outline-primary">

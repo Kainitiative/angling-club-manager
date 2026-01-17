@@ -99,6 +99,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message = 'Competition deleted.';
     $messageType = 'info';
   }
+  
+  if ($action === 'add_sponsor' && isset($_POST['competition_id'])) {
+    $compId = (int)$_POST['competition_id'];
+    
+    $stmt = $pdo->prepare("SELECT id FROM competitions WHERE id = ? AND club_id = ?");
+    $stmt->execute([$compId, $clubId]);
+    if (!$stmt->fetch()) {
+      $message = 'Competition not found or access denied.';
+      $messageType = 'danger';
+    } else {
+      $name = trim($_POST['sponsor_name'] ?? '');
+      $company = trim($_POST['sponsor_company'] ?? '');
+      $website = trim($_POST['sponsor_website'] ?? '');
+      $description = trim($_POST['sponsor_description'] ?? '');
+      
+      if ($name !== '') {
+        $logoUrl = '';
+        if (!empty($_FILES['sponsor_logo']['name']) && $_FILES['sponsor_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+          require_once __DIR__ . '/../../app/image_upload.php';
+          try {
+            $uploadDir = __DIR__ . '/../../uploads/sponsors';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            $result = processLogoUpload($_FILES['sponsor_logo'], $uploadDir, 300, 85);
+            $logoUrl = $result['url'];
+          } catch (Exception $e) {
+            $message = 'Logo upload failed: ' . $e->getMessage();
+            $messageType = 'danger';
+          }
+        }
+        
+        if ($messageType !== 'danger') {
+          $stmt = $pdo->prepare("INSERT INTO sponsors (competition_id, name, company, logo_url, website, description) VALUES (?, ?, ?, ?, ?, ?)");
+          $stmt->execute([$compId, $name, $company ?: null, $logoUrl ?: null, $website ?: null, $description ?: null]);
+          $message = 'Sponsor added to competition.';
+          $messageType = 'success';
+        }
+      } else {
+        $message = 'Sponsor name is required.';
+        $messageType = 'danger';
+      }
+    }
+  }
+  
+  if ($action === 'delete_sponsor' && isset($_POST['sponsor_id'])) {
+    $sponsorId = (int)$_POST['sponsor_id'];
+    $stmt = $pdo->prepare("DELETE FROM sponsors WHERE id = ? AND competition_id IN (SELECT id FROM competitions WHERE club_id = ?)");
+    $stmt->execute([$sponsorId, $clubId]);
+    $message = 'Sponsor removed.';
+    $messageType = 'info';
+  }
 }
 
 $stmt = $pdo->prepare("
@@ -108,6 +158,17 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$clubId]);
 $competitions = $stmt->fetchAll();
+
+$competitionSponsors = [];
+$compIds = array_column($competitions, 'id');
+if (!empty($compIds)) {
+  $placeholders = implode(',', array_fill(0, count($compIds), '?'));
+  $stmt = $pdo->prepare("SELECT * FROM sponsors WHERE competition_id IN ($placeholders) ORDER BY display_order, name");
+  $stmt->execute($compIds);
+  foreach ($stmt->fetchAll() as $sponsor) {
+    $competitionSponsors[$sponsor['competition_id']][] = $sponsor;
+  }
+}
 
 $upcomingCount = 0;
 $today = date('Y-m-d');
@@ -291,8 +352,30 @@ foreach ($competitions as $c) {
                       </a>
                     </div>
                   <?php endif; ?>
+                  
+                  <?php $sponsors = $competitionSponsors[$comp['id']] ?? []; ?>
+                  <?php if (!empty($sponsors)): ?>
+                    <div class="mt-3 pt-2 border-top">
+                      <small class="text-muted d-block mb-2">Sponsors:</small>
+                      <div class="d-flex flex-wrap gap-2">
+                        <?php foreach ($sponsors as $sponsor): ?>
+                          <span class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                            <?= e($sponsor['name']) ?>
+                            <form method="post" class="d-inline" onsubmit="return confirm('Remove this sponsor?')">
+                              <input type="hidden" name="action" value="delete_sponsor">
+                              <input type="hidden" name="sponsor_id" value="<?= $sponsor['id'] ?>">
+                              <button type="submit" class="btn btn-link btn-sm p-0 text-danger" style="font-size: 10px;">&times;</button>
+                            </form>
+                          </span>
+                        <?php endforeach; ?>
+                      </div>
+                    </div>
+                  <?php endif; ?>
                 </div>
                 <div class="text-end">
+                  <button type="button" class="btn btn-outline-secondary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#sponsorModal<?= $comp['id'] ?>">
+                    <i class="bi bi-building"></i> Sponsors
+                  </button>
                   <?php if ($comp['competition_date'] <= $today): ?>
                     <a href="/public/admin/competition_results.php?competition_id=<?= $comp['id'] ?>" class="btn btn-success btn-sm mb-1">
                       Results
@@ -304,6 +387,48 @@ foreach ($competitions as $c) {
                     <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
                   </form>
                 </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Sponsor Modal for this competition -->
+          <div class="modal fade" id="sponsorModal<?= $comp['id'] ?>" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="action" value="add_sponsor">
+                  <input type="hidden" name="competition_id" value="<?= $comp['id'] ?>">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Add Sponsor to <?= e($comp['title']) ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Sponsor Name <span class="text-danger">*</span></label>
+                      <input type="text" name="sponsor_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Company</label>
+                      <input type="text" name="sponsor_company" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Logo</label>
+                      <input type="file" name="sponsor_logo" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Website</label>
+                      <input type="url" name="sponsor_website" class="form-control" placeholder="https://">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Description</label>
+                      <textarea name="sponsor_description" class="form-control" rows="2"></textarea>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Sponsor</button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
