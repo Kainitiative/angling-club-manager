@@ -102,10 +102,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="container">
     <div class="row align-items-center">
       <div class="col-lg-7">
+        <div class="mb-3">
+          <span class="badge bg-success fs-6 px-3 py-2">
+            <i class="bi bi-gift me-1"></i> Free During Beta - All Features Included
+          </span>
+        </div>
         <h1 class="display-4 fw-bold mb-3">Manage Your Fishing Club With Ease</h1>
         <p class="lead mb-4">The complete platform for angling clubs. Manage members, organize competitions, schedule meetings, and grow your community.</p>
         <a href="/public/auth/register.php" class="btn btn-light btn-lg me-2">Get Started Free</a>
         <a href="/public/clubs.php" class="btn btn-outline-light btn-lg">Browse Clubs</a>
+        <p class="mt-3 small opacity-75">No credit card required. Premium features coming soon.</p>
       </div>
       <div class="col-lg-5 d-none d-lg-block text-center">
         <div class="display-1">🎣</div>
@@ -179,8 +185,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </section>
 
 <footer class="bg-dark text-white py-4">
-  <div class="container text-center">
-    <p class="mb-0">Angling Club Manager</p>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4 mb-3 mb-md-0">
+        <h6 class="text-white mb-2">Angling Club Manager</h6>
+        <p class="text-muted small mb-1">&copy; <?= date('Y') ?> Patrick Ryan Digital Design</p>
+        <p class="text-muted small mb-0">
+          <span class="badge bg-success">Free During Beta</span>
+        </p>
+      </div>
+      <div class="col-md-4 mb-3 mb-md-0">
+        <h6 class="text-white mb-2">Explore</h6>
+        <a href="/public/clubs.php" class="text-muted text-decoration-none d-block small mb-1">Browse Clubs</a>
+        <a href="/public/competitions.php" class="text-muted text-decoration-none d-block small">Competitions</a>
+      </div>
+      <div class="col-md-4">
+        <h6 class="text-white mb-2">Legal</h6>
+        <a href="/public/legal/privacy.php" class="text-muted text-decoration-none d-block small mb-1">Privacy Policy</a>
+        <a href="/public/legal/terms.php" class="text-muted text-decoration-none d-block small mb-1">Terms & Conditions</a>
+        <a href="/public/legal/cookies.php" class="text-muted text-decoration-none d-block small">Cookie Policy</a>
+      </div>
+    </div>
   </div>
 </footer>
 
