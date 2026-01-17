@@ -165,6 +165,17 @@ User Roles:
 - **Irish Specimen Fish Committee (ISFC)**: `https://specimenfish.ie/feed`
 - **Angling Council of Ireland (News)**: `https://www.anglingcouncil.ie/feed` (if available, check for updates)
 
+### Personalization Strategy (Planned)
+- **User Targeting**: When a logged-in user has specified favorite fishing styles (e.g., Pike, Salmon, Sea) in their profile, the RSS feed on their dashboard or landing page will be filtered/prioritized.
+- **Filtering Logic**: 
+    - The `fetch_rss_feed` helper will be updated to accept a `$keyword` or `$category` parameter.
+    - It will match user preferences against the `<category>` tags or keywords in the RSS item titles/descriptions.
+    - High-relevance items will be boosted to the top of the list to ensure the user sees their preferred content first.
+- **Technical Path**:
+    1. Update `users` table to store `favorite_styles` (JSON or separate table).
+    2. Modify `fetch_rss_feed` in `app/rss_helper.php` to handle keyword-based scoring.
+    3. Update `index.php` and `dashboard.php` to pass user preferences into the fetcher.
+
 ## Image Uploads
 Images are processed using PHP's GD library:
 - **Logo uploads**: Resized to max 200x200px, saved as PNG (preserves transparency) or JPEG
