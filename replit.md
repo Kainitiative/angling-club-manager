@@ -134,6 +134,12 @@ User Roles:
 - **Marketing**:
     - SEO-optimized event snippets and "What's On" global calendar
     - Club merchandise shop integration
+- **National Protection System (IFI Integration)**:
+    - Incident Reporting: Public/Member form for pollution, poaching, damage, or illegal netting.
+    - Regional Routing: Super Admin can input Officer names, counties, and direct emails.
+    - Local Alerts: Reports are automatically dispatched to the specific local officers on the ground via email with GPS pins and photos.
+    - Officer Availability: Future capability for officers to toggle "On Duty / Off Duty" status via a mobile dashboard.
+    - IFI News: Integration of official IFI RSS feeds and regulatory rules.
 
 ## Image Uploads
 Images are processed using PHP's GD library:
