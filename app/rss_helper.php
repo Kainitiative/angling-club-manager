@@ -114,6 +114,17 @@ function fetch_full_article_content(string $url): string {
             return "";
         }
         
+        // Convert relative URLs to absolute URLs
+        $parsedUrl = parse_url($url);
+        $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+        
+        // Fix src attributes (images, videos, etc)
+        $content = preg_replace('/src=["\']\/([^"\']+)["\']/', 'src="' . $baseUrl . '/$1"', $content);
+        // Fix href attributes
+        $content = preg_replace('/href=["\']\/([^"\']+)["\']/', 'href="' . $baseUrl . '/$1"', $content);
+        // Fix srcset attributes
+        $content = preg_replace('/srcset=["\']\/([^"\']+)["\']/', 'srcset="' . $baseUrl . '/$1"', $content);
+        
         // Sanitize - remove scripts and styles
         $content = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', "", $content);
         $content = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', "", $content);
