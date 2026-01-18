@@ -1,4 +1,4 @@
--- Comprehensive database fix script
+-- Comprehensive database fix script for MySQL
 -- Run this to ensure all tables exist with correct structure
 
 -- Drop and recreate sponsors table with correct columns
@@ -21,33 +21,6 @@ CREATE TABLE sponsors (
     INDEX idx_sponsors_competition (competition_id),
     INDEX idx_sponsors_active (is_active)
 );
-
--- Ensure club_members has all required columns
-ALTER TABLE club_members 
-    ADD COLUMN IF NOT EXISTS committee_role VARCHAR(50) NULL,
-    ADD COLUMN IF NOT EXISTS parent_user_id INT UNSIGNED NULL;
-
--- Ensure users has junior member columns
-ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS is_junior TINYINT(1) DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS parent_id INT UNSIGNED NULL,
-    ADD COLUMN IF NOT EXISTS date_of_birth DATE NULL,
-    ADD COLUMN IF NOT EXISTS is_super_admin TINYINT(1) DEFAULT 0;
-
--- Ensure clubs has all required columns
-ALTER TABLE clubs
-    ADD COLUMN IF NOT EXISTS account_type VARCHAR(50) DEFAULT 'angling_club',
-    ADD COLUMN IF NOT EXISTS tagline VARCHAR(255) NULL,
-    ADD COLUMN IF NOT EXISTS about_text TEXT NULL,
-    ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS website VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS social_facebook VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS social_instagram VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS social_twitter VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS social_youtube VARCHAR(500) NULL,
-    ADD COLUMN IF NOT EXISTS primary_color VARCHAR(7) NULL,
-    ADD COLUMN IF NOT EXISTS secondary_color VARCHAR(7) NULL,
-    ADD COLUMN IF NOT EXISTS is_public TINYINT(1) DEFAULT 1;
 
 -- Create messages table if not exists
 CREATE TABLE IF NOT EXISTS messages (
@@ -260,4 +233,4 @@ CREATE TABLE IF NOT EXISTS club_news (
     INDEX idx_news_club (club_id)
 );
 
-SELECT 'All tables created/updated successfully!' as status;
+SELECT 'All tables created successfully!' as status;
