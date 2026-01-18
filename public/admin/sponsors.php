@@ -132,7 +132,7 @@ $stmt->execute([$clubId]);
 $sponsors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $pageTitle = 'Sponsors & Supporters - ' . e($club['name']);
-include __DIR__ . '/../../app/layout/admin_shell.php';
+require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -309,4 +309,4 @@ include __DIR__ . '/../../app/layout/admin_shell.php';
   </div>
 </div>
 
-<?php include __DIR__ . '/../../app/layout/admin_footer.php'; ?>
+<?php club_admin_shell_end(); ?>
