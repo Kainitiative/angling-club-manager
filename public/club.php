@@ -80,7 +80,7 @@ if ($userId) {
   }
 }
 
-<?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   if (!$userId) {
     redirect('/public/auth/login.php');
   }
