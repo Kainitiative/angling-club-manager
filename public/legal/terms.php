@@ -127,40 +127,8 @@ public_shell_start(['title' => $pageTitle]);
       </section>
 
       <section class="mb-5">
-        <h2>7. Subscriptions & Payments</h2>
-        <h5>7.1 Subscription Plans</h5>
-        <ul>
-          <li><strong>Free:</strong> Basic membership features for club members</li>
-          <li><strong>Club Admin (€10/month):</strong> Club administration features</li>
-          <li><strong>Club Pro (€15/month):</strong> Full features including financial management</li>
-        </ul>
-        <p>New club administrators receive a 3-month free trial.</p>
-        
-        <h5>7.2 Payment Terms</h5>
-        <ul>
-          <li>Payments are processed securely through Stripe</li>
-          <li>Subscriptions are billed monthly in advance</li>
-          <li>Prices are in Euros (€) and include applicable taxes</li>
-          <li>We may change prices with 30 days notice</li>
-        </ul>
-        
-        <h5>7.3 No Refunds</h5>
-        <p><strong>All subscription payments are non-refundable.</strong> Club Manager Platform is a service, and once a payment period has begun, no refunds will be issued for:</p>
-        <ul>
-          <li>Unused portions of the subscription period</li>
-          <li>Downgrading to a lower plan</li>
-          <li>Account closure or cancellation</li>
-        </ul>
-        
-        <h5>7.4 Failed Payments</h5>
-        <p>If a subscription payment fails:</p>
-        <ul>
-          <li>We will attempt to process the payment again</li>
-          <li>If payment continues to fail, your club account will be frozen</li>
-          <li>Frozen clubs cannot access admin features until payment is received</li>
-          <li>Club data is preserved during the frozen period</li>
-          <li>Members can still view public club information</li>
-        </ul>
+        <h2>7. Platform Usage</h2>
+        <p>Angling Ireland is provided as a free service to the Irish angling community. There are no subscription fees for clubs, fisheries, or individual users.</p>
       </section>
 
       <section class="mb-5">
