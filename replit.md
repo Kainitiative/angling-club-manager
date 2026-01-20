@@ -33,6 +33,7 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **Club Documents & Templates**: Comprehensive document template library for clubs including constitution template, membership application form, safeguarding policy, parental consent form, code of conduct, and privacy policy. Includes links to official NCFFI/Sport Ireland resources and a document compliance checklist. Accessible via `public/admin/documents.php`.
 - **Committee Guide**: Detailed guide for club committees covering committee structure and size guidelines, role descriptions with duties for all officer positions (Chairperson, Secretary, Treasurer, PRO, CWO, Competition Secretary), meeting management (before/during/after), best practices for running a committee, and an annual calendar template. Accessible via `public/admin/committee.php`.
 - **Angling Affiliations**: Tracking and potential integration with national bodies like the Angling Council of Ireland and its federations, with a vision for affiliation tracking and support for unified standards and national competitions.
+- **Pollution & Poaching Reporting (Planned)**: A comprehensive incident reporting system allowing users to log environmental issues or illegal activities with photo evidence and location tagging, facilitating direct escalation to club officers and national authorities (IFI/NPWS).
 - **RSS Feed Personalization (Planned)**: Strategy to filter and prioritize RSS feed content based on user-defined favorite fishing styles.
 
 ## External Dependencies
