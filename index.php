@@ -254,38 +254,65 @@ if ($isLoggedIn) {
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-lg-8 text-center">
-        <h2 class="mb-4">Join Our Community</h2>
-        <p class="lead text-muted mb-4">Register for free to discover angling clubs, browse upcoming competitions, and connect with fellow anglers in your area.</p>
+        <h2 class="mb-4">Everything You Need for Irish Angling</h2>
+        <p class="lead text-muted mb-4">Join the modern digital hub designed for anglers, clubs, and fisheries across Ireland.</p>
         <div class="row g-4 mb-4">
           <div class="col-md-4">
-            <div class="card h-100 border-0 bg-light">
-              <div class="card-body text-center">
-                <div class="display-4 mb-2">🎣</div>
-                <h5>Find Clubs</h5>
-                <p class="text-muted small mb-0">Discover local angling clubs and join communities that match your fishing style.</p>
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">🛡️</div>
+                <h5 class="fw-bold">Governance Hub</h5>
+                <p class="text-muted small mb-0">Access Sport Ireland & NCFFI compliant templates, best practice guides, and constitution builders.</p>
               </div>
             </div>
           </div>
           <div class="col-md-4">
-            <div class="card h-100 border-0 bg-light">
-              <div class="card-body text-center">
-                <div class="display-4 mb-2">🏆</div>
-                <h5>Competitions</h5>
-                <p class="text-muted small mb-0">Browse and enter fishing competitions hosted by clubs near you.</p>
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">📈</div>
+                <h5 class="fw-bold">Entity Profiles</h5>
+                <p class="text-muted small mb-0">Custom microsites for clubs and guides with catch galleries, social links, and sponsor showcases.</p>
               </div>
             </div>
           </div>
           <div class="col-md-4">
-            <div class="card h-100 border-0 bg-light">
-              <div class="card-body text-center">
-                <div class="display-4 mb-2">📊</div>
-                <h5>Track Results</h5>
-                <p class="text-muted small mb-0">View competition results and see how you stack up against other anglers.</p>
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">⚖️</div>
+                <h5 class="fw-bold">Financial Tools</h5>
+                <p class="text-muted small mb-0">Streamline club accounting with income/expense tracking and automated summary reports.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">🏆</div>
+                <h5 class="fw-bold">Competitions</h5>
+                <p class="text-muted small mb-0">Manage seasons, weight-in results, and dynamic leaderboards for any angling discipline.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">🤝</div>
+                <h5 class="fw-bold">Committee Tools</h5>
+                <p class="text-muted small mb-0">Professionalize meetings with digital minutes, task assignments, and annual planning calendars.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 border-0 bg-light hover-up">
+              <div class="card-body text-center p-4">
+                <div class="display-4 mb-3">📱</div>
+                <h5 class="fw-bold">Member Portal</h5>
+                <p class="text-muted small mb-0">Personal dashboards for anglers to log catches, view stats, and manage club memberships.</p>
               </div>
             </div>
           </div>
         </div>
-        <a href="/public/auth/register.php" class="btn btn-primary btn-lg">Create Free Account</a>
+        <a href="/public/auth/register.php" class="btn btn-primary btn-lg px-5 py-3 shadow-sm">Create Your Profile Today</a>
       </div>
     </div>
   </div>
