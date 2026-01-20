@@ -9,10 +9,19 @@ $email = '';
 $isLoggedIn = (bool)current_user_id();
 
 // Fetch IFI news feed
-$ifiNews = fetch_rss_feed('https://fishinginireland.info/feed', 3);
+$ifiNews = fetch_rss_feed('https://fishinginireland.info/feed', 5);
 
 // Fetch ISFC news feed
-$isfcNews = fetch_rss_feed('https://specimenfish.ie/feed', 3);
+$isfcNews = fetch_rss_feed('https://specimenfish.ie/feed', 5);
+
+// Merge and sort feeds by date
+$mergedNews = array_merge($ifiNews, $isfcNews);
+usort($mergedNews, function($a, $b) {
+  return $b['timestamp'] <=> $a['timestamp'];
+});
+
+// Take top 6 for the feed
+$mergedNews = array_slice($mergedNews, 0, 6);
 
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -160,7 +169,7 @@ if ($isLoggedIn) {
       </div>
     </div>
 
-    <?php if (!empty($ifiNews)): ?>
+    <?php if (!empty($mergedNews)): ?>
     <div class="row justify-content-center mt-4 mb-5">
       <div class="col-lg-12">
         <div class="text-center mb-5">
@@ -170,12 +179,17 @@ if ($isLoggedIn) {
         </div>
         
         <div class="row g-4">
-          <?php foreach ($ifiNews as $index => $news): ?>
+          <?php foreach ($mergedNews as $index => $news): ?>
             <div class="col-md-4">
               <div class="card h-100 border-0 shadow-sm hover-up overflow-hidden">
                 <div class="card-body p-4">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">IFI News</span>
+                    <?php 
+                      $isIsfc = str_contains($news['link'], 'specimenfish.ie');
+                      $badgeClass = $isIsfc ? 'bg-light text-success border border-success-subtle' : 'bg-light text-primary border border-primary-subtle';
+                      $badgeText = $isIsfc ? 'ISFC Report' : 'IFI News';
+                    ?>
+                    <span class="badge <?= $badgeClass ?> px-2 py-1"><?= $badgeText ?></span>
                     <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
                   </div>
                   <h5 class="card-title fw-bold mb-3">
@@ -186,7 +200,7 @@ if ($isLoggedIn) {
                   <p class="card-text text-muted small mb-4">
                     <?= e(mb_strimwidth($news['description'], 0, 120, "...")) ?>
                   </p>
-                  <div class="mt-auto d-flex align-items-center text-primary fw-bold small">
+                  <div class="mt-auto d-flex align-items-center <?= $isIsfc ? 'text-success' : 'text-primary' ?> fw-bold small">
                     Read Story <i class="bi bi-arrow-right ms-2"></i>
                   </div>
                 </div>
@@ -202,83 +216,7 @@ if ($isLoggedIn) {
                   </div>
                   <div class="modal-body p-4 p-md-5 pt-0">
                     <div class="mb-3">
-                      <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">National Update</span>
-                      <small class="text-muted ms-2"><?= date('d M Y', $news['timestamp']) ?></small>
-                    </div>
-                    <h2 class="fw-bold mb-4"><?= e($news['title']) ?></h2>
-                    <div class="news-content text-muted mb-4" style="font-size: 1.1rem; line-height: 1.8;">
-                      <?php 
-                        // Try to get full content if possible, otherwise fallback to description
-                        $fullContent = fetch_full_article_content($news['link']);
-                        if ($fullContent && strlen($fullContent) > strlen($news['description'])) {
-                            echo $fullContent;
-                        } else {
-                            echo nl2br(e($news['description'])); 
-                        }
-                      ?>
-                    </div>
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pt-4 border-top">
-                      <div class="text-muted small">
-                        Source: <span class="fw-bold">Inland Fisheries Ireland</span>
-                      </div>
-                      <a href="<?= e($news['link']) ?>" target="_blank" class="btn btn-primary px-4 py-2">
-                        View Full Article on IFI <i class="bi bi-box-arrow-up-right ms-2"></i>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-    </div>
-    <?php endif; ?>
-
-    <?php if (!empty($isfcNews)): ?>
-    <div class="row justify-content-center mt-5">
-      <div class="col-lg-12">
-        <div class="text-center mb-5">
-          <span class="text-success text-uppercase fw-bold tracking-wider small">Specimen Fish Reports</span>
-          <h2 class="mt-2 fw-bold">Recent Trophy Catches & Records</h2>
-          <div class="bg-success mx-auto mt-3" style="width: 50px; height: 3px;"></div>
-        </div>
-        
-        <div class="row g-4">
-          <?php foreach ($isfcNews as $index => $news): ?>
-            <?php $isfcIndex = $index + 100; // Unique index for ISFC modals ?>
-            <div class="col-md-4">
-              <div class="card h-100 border-0 shadow-sm hover-up overflow-hidden">
-                <div class="card-body p-4">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-light text-success border border-success-subtle px-2 py-1">ISFC Report</span>
-                    <small class="text-muted"><?= date('d M Y', $news['timestamp']) ?></small>
-                  </div>
-                  <h5 class="card-title fw-bold mb-3">
-                    <a href="#" class="text-dark text-decoration-none stretched-link" data-bs-toggle="modal" data-bs-target="#newsModal<?= $isfcIndex ?>">
-                      <?= e($news['title']) ?>
-                    </a>
-                  </h5>
-                  <p class="card-text text-muted small mb-4">
-                    <?= e(mb_strimwidth($news['description'], 0, 120, "...")) ?>
-                  </p>
-                  <div class="mt-auto d-flex align-items-center text-success fw-bold small">
-                    Read Report <i class="bi bi-arrow-right ms-2"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- News Modal -->
-            <div class="modal fade" id="newsModal<?= $isfcIndex ?>" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow">
-                  <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body p-4 p-md-5 pt-0">
-                    <div class="mb-3">
-                      <span class="badge bg-light text-success border border-success-subtle px-2 py-1">Specimen Report</span>
+                      <span class="badge <?= $badgeClass ?> px-2 py-1"><?= $badgeText ?></span>
                       <small class="text-muted ms-2"><?= date('d M Y', $news['timestamp']) ?></small>
                     </div>
                     <h2 class="fw-bold mb-4"><?= e($news['title']) ?></h2>
@@ -294,10 +232,10 @@ if ($isLoggedIn) {
                     </div>
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pt-4 border-top">
                       <div class="text-muted small">
-                        Source: <span class="fw-bold">Irish Specimen Fish Committee</span>
+                        Source: <span class="fw-bold"><?= $isIsfc ? 'Irish Specimen Fish Committee' : 'Inland Fisheries Ireland' ?></span>
                       </div>
-                      <a href="<?= e($news['link']) ?>" target="_blank" class="btn btn-success px-4 py-2">
-                        View Full Report on ISFC <i class="bi bi-box-arrow-up-right ms-2"></i>
+                      <a href="<?= e($news['link']) ?>" target="_blank" class="btn <?= $isIsfc ? 'btn-success' : 'btn-primary' ?> px-4 py-2">
+                        View Full Article <i class="bi bi-box-arrow-up-right ms-2"></i>
                       </a>
                     </div>
                   </div>
@@ -305,10 +243,6 @@ if ($isLoggedIn) {
               </div>
             </div>
           <?php endforeach; ?>
-        </div>
-        
-        <div class="text-center mt-5">
-          <p class="small text-muted mb-0">Official trophy catch verification data from the Irish Specimen Fish Committee.</p>
         </div>
       </div>
     </div>
