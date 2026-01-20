@@ -127,8 +127,8 @@ if ($isLoggedIn) {
             <i class="bi bi-gift me-1"></i> Free During Beta - All Features Included
           </span>
         </div>
-        <h1 class="display-4 fw-bold mb-3">Manage Your Fishing Club With Ease</h1>
-        <p class="lead mb-4">The complete platform for angling clubs. Manage members, organize competitions, schedule meetings, and grow your community.</p>
+        <h1 class="display-4 fw-bold mb-3">The Central Digital Platform for Irish Angling</h1>
+        <p class="lead mb-4">Empowering clubs, syndicates, fisheries, and guides with professional tools to manage, connect, and grow their community.</p>
         <a href="/public/auth/register.php" class="btn btn-light btn-lg me-2">Get Started Free</a>
         <a href="/public/clubs.php" class="btn btn-outline-light btn-lg">Browse Clubs</a>
         <p class="mt-3 small opacity-75">No credit card required. Premium features coming soon.</p>
