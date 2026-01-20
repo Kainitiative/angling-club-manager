@@ -43,7 +43,7 @@ if ($isLoggedIn) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Angling Club Manager - Find & Manage Fishing Clubs</title>
+  <title>Angling Ireland - Find & Manage Fishing Clubs</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link href="/assets/css/enhancements.css" rel="stylesheet">
@@ -110,7 +110,7 @@ if ($isLoggedIn) {
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="/">Angling Club Manager</a>
+    <a class="navbar-brand fw-bold" href="/">Angling Ireland</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm me-2" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Log In</a>
       <a class="btn btn-primary btn-sm" href="/public/auth/register.php">Sign Up</a>
@@ -361,7 +361,7 @@ if ($isLoggedIn) {
   <div class="container">
     <div class="row">
       <div class="col-md-4 mb-3 mb-md-0">
-        <h6 class="text-white mb-2">Angling Club Manager</h6>
+        <h6 class="text-white mb-2">Angling Ireland</h6>
         <p class="text-muted small mb-1">&copy; <?= date('Y') ?> Patrick Ryan Digital Design</p>
         <p class="text-muted small mb-0">
           <span class="badge bg-success">Free During Beta</span>

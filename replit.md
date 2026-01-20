@@ -1,7 +1,7 @@
-# Angling Club Manager
+# Angling Ireland
 
 ## Overview
-The Angling Club Manager is a PHP-based web application designed to streamline the administration and enhance the community experience for angling clubs, syndicates, commercial fisheries, angling guides, and charter boats. It aims to be the central digital platform for managing memberships, finances, communications, and member engagement (e.g., catch logging, competitions). The project's vision includes integrating with national angling governing bodies like the Angling Council of Ireland (ACI) and its federations to promote standardized practices and support national events. Ultimately, it seeks to modernize angling club operations and foster a more connected and engaging environment for anglers across Ireland.
+Angling Ireland is a PHP-based web application designed to streamline the administration and enhance the community experience for angling clubs, syndicates, commercial fisheries, angling guides, and charter boats. It aims to be the central digital platform for managing memberships, finances, communications, and member engagement (e.g., catch logging, competitions). The project's vision includes integrating with national angling governing bodies like the Angling Council of Ireland (ACI) and its federations to promote standardized practices and support national events. Ultimately, it seeks to modernize angling club operations and foster a more connected and engaging environment for anglers across Ireland.
 
 ## User Preferences
 The user prefers a conversational and helpful interaction style. When making changes, the user expects the agent to ask clarifying questions and confirm understanding before proceeding. The user appreciates detailed explanations for complex tasks or significant architectural decisions. The user explicitly stated to not make changes to folder `Z` and file `Y`.

@@ -52,7 +52,7 @@ function member_shell_start($pdo, $options = []) {
         <div class="sidebar-header">
             <a href="/public/dashboard.php" class="sidebar-brand">
                 <i class="bi bi-water"></i>
-                Angling Club Manager
+                Angling Ireland
             </a>
         </div>
         

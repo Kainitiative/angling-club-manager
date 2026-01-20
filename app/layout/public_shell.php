@@ -16,7 +16,7 @@ require_once __DIR__ . '/../nav_config.php';
 function public_shell_start($pdo = null, $options = []) {
     global $pageTitle;
     
-    $pageTitle = $options['title'] ?? $pageTitle ?? 'Angling Club Manager';
+    $pageTitle = $options['title'] ?? $pageTitle ?? 'Angling Ireland';
     $isLoggedIn = function_exists('current_user_id') && current_user_id() > 0;
     $showLoginModal = $options['showLoginModal'] ?? false;
     $navStyle = $options['navStyle'] ?? 'dark'; // dark or transparent
@@ -29,7 +29,7 @@ function public_shell_start($pdo = null, $options = []) {
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
             <i class="bi bi-water me-1"></i>
-            Angling Club Manager
+            Angling Ireland
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav">
             <span class="navbar-toggler-icon"></span>
@@ -73,7 +73,7 @@ function public_shell_end($options = []) {
     <div class="container">
         <div class="row">
             <div class="col-md-4 mb-3 mb-md-0">
-                <h6 class="text-white mb-2">Angling Club Manager</h6>
+                <h6 class="text-white mb-2">Angling Ireland</h6>
                 <p class="text-muted small mb-0">&copy; <?= date('Y') ?> Patrick Ryan Digital Design</p>
             </div>
             <div class="col-md-4 mb-3 mb-md-0">

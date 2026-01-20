@@ -3,7 +3,7 @@
  * Shared HTML header - outputs DOCTYPE through opening body tag
  * Usage: include this, then your content, then footer.php
  */
-if (!isset($pageTitle)) $pageTitle = 'Angling Club Manager';
+if (!isset($pageTitle)) $pageTitle = 'Angling Ireland';
 if (!isset($bodyClass)) $bodyClass = '';
 ?>
 <!DOCTYPE html>
