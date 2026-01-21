@@ -1,0 +1,66 @@
+# Angling Ireland - Apache Configuration
+# For cPanel/LetsHost LAMP Stack
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Force HTTPS (handled by Cloudflare, but backup rule)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Set default index
+DirectoryIndex index.php
+
+# Disable directory browsing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(config\.local\.php|config\.sample\.php|setup\.lock|\.env|\.git|replit\.md)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Protect directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^app/.*$ - [F,L]
+    RewriteRule ^db/.*$ - [F,L]
+</IfModule>
+
+# Error documents
+ErrorDocument 404 /app/error_pages/404.php
+ErrorDocument 500 /app/error_pages/500.php
+
+# PHP settings (if allowed by host)
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 60
+    php_value memory_limit 128M
+</IfModule>
+
+# Cache control for assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>
+
+# Prevent caching of PHP files
+<FilesMatch "\.php$">
+    <IfModule mod_headers.c>
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </IfModule>
+</FilesMatch>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

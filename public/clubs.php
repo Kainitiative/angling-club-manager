@@ -81,7 +81,7 @@ $fishingStyleLabels = [
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Browse Clubs - Angling Club Manager</title>
+  <title>Browse Clubs - Angling Ireland</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     .club-card { transition: transform 0.2s, box-shadow 0.2s; }
@@ -120,7 +120,7 @@ $fishingStyleLabels = [
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto">
       <?php if ($isLoggedIn): ?>
         <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
@@ -252,7 +252,7 @@ $fishingStyleLabels = [
 
 <footer class="bg-dark text-white py-4 mt-5">
   <div class="container text-center">
-    <p class="mb-0">Powered by Angling Club Manager</p>
+    <p class="mb-0">Powered by Angling Ireland</p>
   </div>
 </footer>
 

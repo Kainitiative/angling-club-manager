@@ -61,7 +61,7 @@ $activeTab = $_GET['tab'] ?? 'templates';
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
     </div>

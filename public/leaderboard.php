@@ -64,7 +64,7 @@ $scoringLabels = [
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm" href="/public/club.php?slug=<?= e($season['slug']) ?>">Back to Club</a>
     </div>

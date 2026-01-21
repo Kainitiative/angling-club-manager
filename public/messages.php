@@ -191,7 +191,7 @@ $activeTab = $_GET['tab'] ?? 'inbox';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messages - Angling Club Manager</title>
+  <title>Messages - Angling Ireland</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -204,7 +204,7 @@ $activeTab = $_GET['tab'] ?? 'inbox';
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="/public/dashboard.php">Angling Club Manager</a>
+      <a class="navbar-brand" href="/public/dashboard.php">Angling Ireland</a>
       <div class="navbar-nav ms-auto">
         <a class="nav-link" href="/public/notifications.php">Notifications</a>
         <a class="nav-link active" href="/public/messages.php">Messages</a>

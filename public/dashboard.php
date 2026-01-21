@@ -452,7 +452,7 @@ member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'sectio
           <div class="mb-4">
             <i class="bi bi-water" style="font-size: 4rem; color: #2d5a87;"></i>
           </div>
-          <h4>Welcome to Angling Club Manager!</h4>
+          <h4>Welcome to Angling Ireland!</h4>
           <p class="text-muted mb-4">You're not part of any angling club yet. Browse existing clubs to join or create your own!</p>
           <div class="d-flex justify-content-center gap-3">
             <a href="/public/clubs.php" class="btn btn-primary">Browse Clubs</a>

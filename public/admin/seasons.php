@@ -187,7 +187,7 @@ $scoringTypes = [
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto">
       <a class="btn btn-outline-light btn-sm" href="/public/club.php?slug=<?= e($club['slug']) ?>">View Club</a>
       <a class="btn btn-outline-light btn-sm" href="/public/admin/competitions.php?club_id=<?= $clubId ?>">Competitions</a>

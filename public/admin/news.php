@@ -151,7 +151,7 @@ if ($editNewsId) {
 <body class="bg-light">
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="/public/dashboard.php">Angling Club Manager</a>
+      <a class="navbar-brand" href="/public/dashboard.php">Angling Ireland</a>
       <div class="navbar-nav ms-auto">
         <a class="nav-link" href="/public/club.php?slug=<?= htmlspecialchars($club['slug']) ?>">View Club</a>
         <a class="nav-link" href="/public/dashboard.php">Dashboard</a>

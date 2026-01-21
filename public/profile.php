@@ -119,7 +119,7 @@ $avatarUrl = $user['profile_picture_url'] ?: $defaultAvatar;
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">Angling Club Manager</a>
+    <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto d-flex gap-2">
       <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
       <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
