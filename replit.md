@@ -11,9 +11,14 @@ The application is built on a PHP foundation, utilizing a unified shell-based na
 
 ### UI/UX Decisions
 The UI/UX prioritizes a polished and responsive experience with subtle animations and micro-interactions. Global CSS (`enhancements.css`) and JavaScript (`enhancements.js`) provide smooth page transitions, button and card hover effects, form input focus states, modal/dropdown animations, and mobile-friendly features like touch feedback and swipe gestures for the sidebar. Accessibility is considered, with animations respecting `prefers-reduced-motion` and utilizing GPU-accelerated CSS transitions.
+- **SSL Enforcement**: Managed via Cloudflare at the DNS/Edge level.
 
 ### Technical Implementations
 - **Core Structure**: `index.php` as the entry point, `app/bootstrap.php` for core application setup (session, DB connection, helpers).
+- **Multi-Database Architecture (Planned)**: Strategy to split data into three isolated databases:
+    - **Identity DB**: User IDs, emails, password hashes.
+    - **PII DB**: Real names, phone numbers, addresses (GDPR Layer).
+    - **App Data DB**: Club profiles, catch logs, competitions (Anonymized Layer).
 - **Navigation**: Managed centrally via `app/nav_config.php` which defines menus for different user roles and includes a breadcrumb rendering function.
 - **Database**: Supports both MySQL and PostgreSQL, with specific configurations for local development (MySQL) and Replit (PostgreSQL via environment variables). A migration system is in place (`/db/updates/` and `schema_migrations` table) for schema evolution.
 - **User Management**: Supports multiple account types (Angling Club, Syndicate, Commercial Fishery, Angling Guide, Charter Boat) and user roles (User, Club Member, Club Admin, Club Owner) with tailored profiles.
