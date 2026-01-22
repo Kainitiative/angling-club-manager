@@ -2,6 +2,20 @@
 declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/../../error_log.txt');
+
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    file_put_contents(__DIR__ . '/../../error_log.txt', date('Y-m-d H:i:s') . " ERROR: $errstr in $errfile on line $errline\n", FILE_APPEND);
+    return false;
+});
+
+set_exception_handler(function($e) {
+    file_put_contents(__DIR__ . '/../../error_log.txt', date('Y-m-d H:i:s') . " EXCEPTION: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine() . "\n" . $e->getTraceAsString() . "\n", FILE_APPEND);
+    http_response_code(500);
+    echo "Error logged to error_log.txt - check that file for details";
+    exit;
+});
 
 require_once __DIR__ . '/../../app/bootstrap.php';
 require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
