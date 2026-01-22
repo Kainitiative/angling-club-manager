@@ -127,9 +127,8 @@ $formData = [
           name, slug, contact_email, about_text,
           address_line1, address_line2, town, county, postcode, country,
           location_text, city, fishing_styles,
-          trial_start_date, trial_end_date, access_until,
-          club_type, tagline
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          trial_start_date, trial_end_date, access_until
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ");
       $stmt->execute([
         $formData['name'],
@@ -147,9 +146,7 @@ $formData = [
         $fishingStylesJson,
         $today,
         $trialEnd,
-        $trialEnd,
-        $formData['club_type'],
-        $formData['tagline'] ?: null
+        $trialEnd
       ]);
 
       $newClubId = $pdo->lastInsertId();
