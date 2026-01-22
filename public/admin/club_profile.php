@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
+try {
+
 require_once __DIR__ . '/../../app/bootstrap.php';
 require_once __DIR__ . '/../../app/image_upload.php';
 
@@ -677,3 +682,14 @@ function updatePreview() {
 </script>
 </body>
 </html>
+<?php
+} catch (Throwable $e) {
+  http_response_code(500);
+  echo '<div style="font-family: monospace; padding: 20px; background: #fee; border: 1px solid #c00; margin: 20px;">';
+  echo '<h2 style="color: #c00;">Error on Club Profile Page</h2>';
+  echo '<p><strong>Message:</strong> ' . htmlspecialchars($e->getMessage()) . '</p>';
+  echo '<p><strong>File:</strong> ' . htmlspecialchars($e->getFile()) . ' (line ' . $e->getLine() . ')</p>';
+  echo '<pre style="background: #fff; padding: 10px; overflow: auto;">' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
+  echo '</div>';
+}
+?>
