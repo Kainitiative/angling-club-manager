@@ -56,15 +56,36 @@ if ($configExists) {
             }
             
             $schema = file_get_contents($schemaFile);
+            
+            // Remove comments and split by semicolon
+            $schema = preg_replace('/--.*$/m', '', $schema);
+            $schema = preg_replace('/\/\*.*?\*\//s', '', $schema);
+            
             $statements = array_filter(
                 array_map('trim', explode(';', $schema)),
-                fn($s) => !empty($s) && !str_starts_with($s, '--')
+                fn($s) => !empty($s)
             );
             
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            $executedCount = 0;
             foreach ($statements as $sql) {
-                if (!empty(trim($sql))) {
-                    $pdo->exec($sql);
+                $sql = trim($sql);
+                if (!empty($sql) && strlen($sql) > 5) {
+                    try {
+                        $pdo->exec($sql);
+                        $executedCount++;
+                    } catch (PDOException $e) {
+                        // Log the error but continue - some statements may fail if tables exist
+                        error_log("SQL Error: " . $e->getMessage() . " | SQL: " . substr($sql, 0, 100));
+                    }
                 }
+            }
+            
+            // Verify users table was created
+            $checkStmt = $pdo->query("SHOW TABLES LIKE 'users'");
+            if ($checkStmt->rowCount() === 0) {
+                throw new Exception("Failed to create database tables. Executed $executedCount statements but users table not found. Check that your MySQL user has CREATE TABLE permissions.");
             }
             
             if (isset($_POST['admin_email']) && isset($_POST['admin_password']) && isset($_POST['admin_name'])) {
