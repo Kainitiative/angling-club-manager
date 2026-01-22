@@ -363,14 +363,9 @@ $accountTypes = [
   'other' => 'Other'
 ];
 
-$pageTitle = 'Finances';
-$breadcrumbs = [
-  ['label' => 'Dashboard', 'url' => '/public/dashboard.php'],
-  ['label' => e($club['name']), 'url' => '/public/club.php?slug=' . e($club['slug'])],
-  ['label' => 'Finances']
-];
+$pageTitle = 'Finances - ' . $club['name'];
 
-ob_start();
+club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => 'finances', 'section' => 'Money']);
 ?>
 
 <div class="container-fluid py-4">
@@ -765,5 +760,4 @@ ob_start();
 <?php endif; ?>
 
 <?php
-$content = ob_get_clean();
-render_club_admin_shell($pageTitle, $content, $clubId, $club, $breadcrumbs);
+club_admin_shell_end();
