@@ -77,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId && $selectedClub) {
     }
     
     if (!$errors) {
-      $stmt = $pdo->prepare("INSERT INTO messages (club_id, sender_id, recipient_id, subject, body, is_announcement) VALUES (?, ?, ?, ?, ?, ?)");
+      $msgTable = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'messages' : 'club_messages';
+      $msgCol = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'content' : 'message';
+      $stmt = $pdo->prepare("INSERT INTO $msgTable (club_id, sender_id, recipient_id, subject, $msgCol, is_announcement) VALUES (?, ?, ?, ?, ?, ?)");
       $stmt->execute([
         $selectedClubId,
         $userId,
@@ -127,11 +129,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $selectedClubId && $selectedClub) {
     }
   } elseif ($action === 'mark_read') {
     $msgId = (int)($_POST['message_id'] ?? 0);
-    $stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ? AND recipient_id = ?");
+    $msgTableUpd = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'messages' : 'club_messages';
+    $stmt = $pdo->prepare("UPDATE $msgTableUpd SET is_read = 1 WHERE id = ? AND recipient_id = ?");
     $stmt->execute([$msgId, $userId]);
   } elseif ($action === 'delete') {
     $msgId = (int)($_POST['message_id'] ?? 0);
-    $stmt = $pdo->prepare("DELETE FROM messages WHERE id = ? AND (sender_id = ? OR recipient_id = ?)");
+    $msgTableDel = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'messages' : 'club_messages';
+    $stmt = $pdo->prepare("DELETE FROM $msgTableDel WHERE id = ? AND (sender_id = ? OR recipient_id = ?)");
     $stmt->execute([$msgId, $userId, $userId]);
   }
 }
@@ -154,12 +158,14 @@ if ($selectedClubId) {
 
 $inboxMessages = [];
 $sentMessages = [];
+$msgTable = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'messages' : 'club_messages';
+
 if ($selectedClubId && $selectedClub) {
   $stmt = $pdo->prepare("
     SELECT m.*, u.name as sender_name
-    FROM messages m
+    FROM $msgTable m
     JOIN users u ON m.sender_id = u.id
-    WHERE m.club_id = ? AND m.recipient_id = ?
+    WHERE m.club_id = ? AND m.recipient_id = ? AND (m.is_announcement = 0 OR m.is_announcement IS NULL)
     ORDER BY m.created_at DESC
     LIMIT 50
   ");
@@ -168,7 +174,7 @@ if ($selectedClubId && $selectedClub) {
   
   $stmt = $pdo->prepare("
     SELECT m.*, u.name as recipient_name
-    FROM messages m
+    FROM $msgTable m
     LEFT JOIN users u ON m.recipient_id = u.id
     WHERE m.club_id = ? AND m.sender_id = ?
     ORDER BY m.created_at DESC
