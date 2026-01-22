@@ -13,7 +13,7 @@ function get_member_nav($pdo, $userId) {
         $stmt->execute([$userId]);
         $hasOwnClub = (int)$stmt->fetchColumn() > 0;
         
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM club_members WHERE user_id = ? AND status = 'active'");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM club_members WHERE user_id = ? AND membership_status = 'active'");
         $stmt->execute([$userId]);
         $isClubMember = (int)$stmt->fetchColumn() > 0;
     } catch (Exception $e) {}
