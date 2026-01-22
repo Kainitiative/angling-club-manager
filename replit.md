@@ -18,8 +18,16 @@ The core structure uses `index.php` as the entry point and `app/bootstrap.php` f
 ### Feature Specifications
 Key features include a robust user authentication system, comprehensive club management (creation, membership requests, profile customization), and financial tracking. Member engagement is fostered through catch logging, personal bests, club records, 'Catch of the Month', competitions, and personal statistics dashboards. The platform supports sponsors and supporters, includes a governance hub with best practice guides, and provides a document template library for clubs. It also features a committee guide and aims for integration with angling affiliations. Planned features include pollution/poaching reporting, RSS feed personalization, a public interactive map, club challenges, internal club leaderboards, gamification/badges, a fish species encyclopedia, personal statistics dashboards, a fishing journal, angler goals/wishlists, weather/conditions integration, data export, and email member invitations.
 
+## Deployment Notes
+- **Production Host**: LetsHost at anglingireland.ie
+- **Production Database**: MySQL 8.2.29 (anglingireland_clubmanager)
+- **Development Database**: PostgreSQL (Replit)
+- **Zip Naming Convention**: Use `anglingirelandv{version}.zip` for releases
+- **Current Version**: v25
+- **Excluded from zip**: config.local.php, install.php, setup.lock, db/, replit.md
+
 ## External Dependencies
-- **Database Systems**: MySQL/MariaDB (development) and PostgreSQL (deployment).
+- **Database Systems**: MySQL/MariaDB (production) and PostgreSQL (development on Replit).
 - **PHP GD Library**: For image manipulation.
 - **Angling Council of Ireland (ACI) Federations**:
     - Irish Federation of Sea Anglers (IFSA)
