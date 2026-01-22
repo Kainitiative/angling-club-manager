@@ -24,7 +24,8 @@ function member_shell_start($pdo, $options = []) {
     $currentPage = $options['page'] ?? $currentPage ?? 'home';
     $section = $options['section'] ?? '';
     
-    // Get badge counts
+    // Get badge counts - stored globally so shell_end can access them
+    global $__member_shell_unread_notifications, $__member_shell_unread_messages;
     $unreadNotifications = 0;
     $unreadMessages = 0;
     try {
@@ -36,6 +37,9 @@ function member_shell_start($pdo, $options = []) {
         $stmt->execute([$userId]);
         $unreadMessages = (int)$stmt->fetchColumn();
     } catch (Exception $e) {}
+    
+    $__member_shell_unread_notifications = $unreadNotifications;
+    $__member_shell_unread_messages = $unreadMessages;
     
     $nav = get_member_nav($pdo, $userId);
     $breadcrumbs = get_breadcrumbs('member', ['section' => $section]);
@@ -143,9 +147,39 @@ function member_shell_start($pdo, $options = []) {
 <?php
 }
 
-function member_shell_end() {
+function member_shell_end($options = []) {
+    global $currentPage, $__member_shell_unread_notifications, $__member_shell_unread_messages;
+    $unreadNotifications = $options['unreadNotifications'] ?? $__member_shell_unread_notifications ?? 0;
+    $unreadMessages = $options['unreadMessages'] ?? $__member_shell_unread_messages ?? 0;
 ?>
         </div>
+        
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-nav">
+            <a href="/public/dashboard.php" class="mobile-nav-item <?= $currentPage === 'home' ? 'active' : '' ?>">
+                <i class="bi bi-house"></i>
+                <span>Home</span>
+            </a>
+            <a href="/public/clubs.php" class="mobile-nav-item <?= $currentPage === 'clubs' ? 'active' : '' ?>">
+                <i class="bi bi-people"></i>
+                <span>Clubs</span>
+            </a>
+            <a href="/public/competitions.php" class="mobile-nav-item <?= $currentPage === 'competitions' ? 'active' : '' ?>">
+                <i class="bi bi-trophy"></i>
+                <span>Comps</span>
+            </a>
+            <a href="/public/messages.php" class="mobile-nav-item <?= $currentPage === 'messages' ? 'active' : '' ?>">
+                <i class="bi bi-envelope"></i>
+                <span>Messages</span>
+                <?php if ($unreadMessages > 0): ?>
+                    <span class="mobile-nav-badge"><?= $unreadMessages > 9 ? '9+' : $unreadMessages ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="/public/profile.php" class="mobile-nav-item <?= $currentPage === 'profile' ? 'active' : '' ?>">
+                <i class="bi bi-person"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
     </main>
 </div>
 <?php

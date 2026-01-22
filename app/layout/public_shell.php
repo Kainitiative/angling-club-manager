@@ -23,15 +23,90 @@ function public_shell_start($pdo = null, $options = []) {
     
     $nav = get_public_nav($isLoggedIn);
     
+    $customStyles = '
+        .public-navbar {
+            padding: 0.75rem 0;
+        }
+        
+        .public-navbar .navbar-brand {
+            font-size: 1.1rem;
+        }
+        
+        .public-navbar .navbar-toggler {
+            border: none;
+            padding: 0.5rem;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        
+        .public-navbar .navbar-toggler:focus {
+            box-shadow: none;
+        }
+        
+        .public-navbar .navbar-nav .nav-link {
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .public-navbar .btn {
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @media (max-width: 991.98px) {
+            .public-navbar .navbar-collapse {
+                padding: 1rem 0;
+            }
+            
+            .public-navbar .navbar-nav .nav-link {
+                padding: 0.875rem 0;
+            }
+            
+            .public-navbar .d-flex {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.5rem !important;
+            }
+            
+            .public-navbar .btn {
+                width: 100%;
+            }
+        }
+        
+        .public-main {
+            min-height: calc(100vh - 200px);
+        }
+        
+        .public-footer {
+            padding: 2rem 0;
+        }
+        
+        @media (max-width: 767.98px) {
+            .public-footer {
+                text-align: center;
+            }
+            
+            .public-footer h6 {
+                margin-top: 1.5rem;
+            }
+            
+            .public-footer h6:first-child {
+                margin-top: 0;
+            }
+        }
+    ';
+    
     include __DIR__ . '/header.php';
 ?>
-<nav class="navbar navbar-expand-lg navbar-dark <?= $navStyle === 'transparent' ? 'bg-transparent position-absolute w-100' : 'bg-dark' ?>">
+<nav class="navbar navbar-expand-lg navbar-dark public-navbar <?= $navStyle === 'transparent' ? 'bg-transparent position-absolute w-100' : 'bg-dark' ?>" style="z-index: 1030;">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/">
             <i class="bi bi-water me-1"></i>
             Angling Ireland
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNav" aria-controls="publicNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="publicNav">
@@ -46,11 +121,11 @@ function public_shell_start($pdo = null, $options = []) {
             <div class="d-flex gap-2">
                 <?php foreach ($nav as $item): ?>
                     <?php if (!empty($item['modal'])): ?>
-                        <a class="btn <?= $item['class'] ?> btn-sm" href="#" data-bs-toggle="modal" data-bs-target="#<?= $item['modal'] ?>">
+                        <a class="btn <?= $item['class'] ?>" href="#" data-bs-toggle="modal" data-bs-target="#<?= $item['modal'] ?>">
                             <?= e($item['label']) ?>
                         </a>
                     <?php else: ?>
-                        <a class="btn <?= $item['class'] ?> btn-sm" href="<?= e($item['url']) ?>">
+                        <a class="btn <?= $item['class'] ?>" href="<?= e($item['url']) ?>">
                             <?= e($item['label']) ?>
                         </a>
                     <?php endif; ?>
@@ -60,7 +135,7 @@ function public_shell_start($pdo = null, $options = []) {
     </div>
 </nav>
 
-<main>
+<main class="public-main">
 <?php
 }
 
@@ -69,7 +144,7 @@ function public_shell_end($options = []) {
 ?>
 </main>
 
-<footer class="bg-dark text-white py-4 mt-auto">
+<footer class="bg-dark text-white mt-auto public-footer">
     <div class="container">
         <div class="row">
             <div class="col-md-4 mb-3 mb-md-0">

@@ -20,6 +20,9 @@ function club_admin_shell_start($pdo, $club, $options = []) {
     $userId = current_user_id();
     $user = current_user($pdo);
     
+    global $__club_admin_shell_club;
+    $__club_admin_shell_club = $club;
+    
     $clubId = $club['id'];
     $clubSlug = $club['slug'];
     $clubName = $club['name'];
@@ -161,9 +164,36 @@ function club_admin_shell_start($pdo, $club, $options = []) {
 <?php
 }
 
-function club_admin_shell_end() {
+function club_admin_shell_end($options = []) {
+    global $currentPage, $__club_admin_shell_club;
+    $clubId = $options['club_id'] ?? ($__club_admin_shell_club['id'] ?? 0);
+    $clubSlug = $options['club_slug'] ?? ($__club_admin_shell_club['slug'] ?? '');
 ?>
         </div>
+        
+        <!-- Mobile Bottom Navigation for Club Admin -->
+        <nav class="mobile-nav">
+            <a href="/public/admin/members.php?club_id=<?= $clubId ?>" class="mobile-nav-item <?= $currentPage === 'members' ? 'active' : '' ?>">
+                <i class="bi bi-people"></i>
+                <span>Members</span>
+            </a>
+            <a href="/public/catches.php?slug=<?= e($clubSlug) ?>" class="mobile-nav-item <?= $currentPage === 'catches' ? 'active' : '' ?>">
+                <i class="bi bi-water"></i>
+                <span>Catches</span>
+            </a>
+            <a href="/public/admin/competitions.php?club_id=<?= $clubId ?>" class="mobile-nav-item <?= $currentPage === 'competitions' ? 'active' : '' ?>">
+                <i class="bi bi-trophy"></i>
+                <span>Comps</span>
+            </a>
+            <a href="/public/admin/finances.php?club_id=<?= $clubId ?>" class="mobile-nav-item <?= $currentPage === 'transactions' ? 'active' : '' ?>">
+                <i class="bi bi-cash-stack"></i>
+                <span>Finance</span>
+            </a>
+            <a href="/public/admin/club_profile.php?club_id=<?= $clubId ?>" class="mobile-nav-item <?= $currentPage === 'profile' ? 'active' : '' ?>">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
     </main>
 </div>
 <?php

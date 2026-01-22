@@ -658,3 +658,247 @@ html {
 .accordion-collapse {
     transition: height 0.3s ease;
 }
+
+/* ========================================
+   23. Mobile-First Utilities
+   ======================================== */
+
+/* Mobile-optimized touch targets */
+.touch-target {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Mobile card improvements */
+@media (max-width: 767.98px) {
+    .card {
+        border-radius: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .card-header,
+    .card-footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    /* Stack buttons on mobile */
+    .btn-group-mobile {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group-mobile .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-group-mobile .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Mobile table improvements */
+    .table-mobile td,
+    .table-mobile th {
+        padding: 0.625rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Hide columns on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Full width on mobile */
+    .full-mobile {
+        width: 100% !important;
+    }
+    
+    /* Mobile spacing adjustments */
+    .mb-mobile-3 {
+        margin-bottom: 1rem !important;
+    }
+    
+    .py-mobile-2 {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    /* Mobile text sizes */
+    .fs-mobile-sm {
+        font-size: 0.875rem !important;
+    }
+    
+    .fs-mobile-xs {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Mobile form improvements */
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+    
+    .input-group .form-control,
+    .input-group .form-select,
+    .input-group .btn {
+        min-height: 44px;
+    }
+    
+    /* Modal adjustments for mobile */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .modal-content {
+        border-radius: 0.75rem;
+    }
+    
+    /* Bottom sheet modal for mobile */
+    .modal-bottom-sheet .modal-dialog {
+        margin: 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: translateY(100%);
+        max-width: 100%;
+    }
+    
+    .modal-bottom-sheet.show .modal-dialog {
+        transform: translateY(0);
+    }
+    
+    .modal-bottom-sheet .modal-content {
+        border-radius: 1rem 1rem 0 0;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Tablet improvements */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .card-body {
+        padding: 1.125rem;
+    }
+    
+    /* Show on tablet only */
+    .show-tablet {
+        display: block !important;
+    }
+}
+
+/* Desktop improvements */
+@media (min-width: 992px) {
+    /* Show only on desktop */
+    .show-desktop {
+        display: block !important;
+    }
+    
+    .hide-desktop {
+        display: none !important;
+    }
+}
+
+/* Horizontal scrollable container for mobile */
+.scroll-x-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scroll-x-mobile::-webkit-scrollbar {
+    display: none;
+}
+
+/* Mobile-friendly stat cards */
+@media (max-width: 575.98px) {
+    .stat-card {
+        padding: 0.875rem;
+    }
+    
+    .stat-card-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    .stat-card h3,
+    .stat-card .h3 {
+        font-size: 1.25rem;
+    }
+    
+    .stat-card small,
+    .stat-card .small {
+        font-size: 0.75rem;
+    }
+}
+
+/* Pull to refresh indicator styling */
+.ptr-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: #6c757d;
+}
+
+.ptr-indicator .spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Safe area padding for notched devices */
+.safe-area-padding {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
+.safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ========================================
+   24. Empty States
+   ======================================== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.empty-state-text {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 575.98px) {
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-state-icon {
+        font-size: 2.5rem;
+    }
+    
+    .empty-state-title {
+        font-size: 1rem;
+    }
+}

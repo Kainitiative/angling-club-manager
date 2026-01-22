@@ -103,8 +103,33 @@ function super_admin_shell_start($pdo, $options = []) {
 }
 
 function super_admin_shell_end() {
+    global $currentPage;
 ?>
         </div>
+        
+        <!-- Mobile Bottom Navigation for Super Admin -->
+        <nav class="mobile-nav">
+            <a href="/public/superadmin/" class="mobile-nav-item <?= $currentPage === 'dashboard' ? 'active' : '' ?>">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/public/superadmin/clubs.php" class="mobile-nav-item <?= $currentPage === 'clubs' ? 'active' : '' ?>">
+                <i class="bi bi-building"></i>
+                <span>Clubs</span>
+            </a>
+            <a href="/public/superadmin/users.php" class="mobile-nav-item <?= $currentPage === 'users' ? 'active' : '' ?>">
+                <i class="bi bi-people"></i>
+                <span>Users</span>
+            </a>
+            <a href="/public/superadmin/subscriptions.php" class="mobile-nav-item <?= $currentPage === 'subscriptions' ? 'active' : '' ?>">
+                <i class="bi bi-credit-card"></i>
+                <span>Subs</span>
+            </a>
+            <a href="/public/dashboard.php" class="mobile-nav-item">
+                <i class="bi bi-arrow-left"></i>
+                <span>Exit</span>
+            </a>
+        </nav>
     </main>
 </div>
 <?php

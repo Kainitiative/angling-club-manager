@@ -10,7 +10,19 @@ The user prefers a conversational and helpful interaction style. When making cha
 The application is built on a PHP foundation, utilizing a unified shell-based navigation system with distinct layouts for different user roles (member, club admin, super admin, public).
 
 ### UI/UX Decisions
-The UI/UX prioritizes a polished, responsive experience with subtle animations and micro-interactions, ensuring mobile-friendliness and accessibility. SSL enforcement is managed via Cloudflare.
+The UI/UX prioritizes a **mobile-first** design with:
+- Collapsible sidebar navigation hidden by default on mobile
+- Persistent bottom navigation bar showing account-relevant tabs on mobile (5 key tabs per shell)
+- Touch-friendly 44px minimum tap targets
+- iOS safe area support for notched devices
+- Responsive breakpoints: mobile (<768px), tablet (768-991px), desktop (992px+)
+
+Different shells have tailored mobile bottom navigation:
+- **Member shell**: Home, Clubs, Comps, Messages (with badge), Profile
+- **Club admin shell**: Members, Catches, Comps, Finance, Settings  
+- **Super admin shell**: Dashboard, Clubs, Users, Subs, Exit
+
+SSL enforcement is managed via Cloudflare.
 
 ### Technical Implementations
 The core structure uses `index.php` as the entry point and `app/bootstrap.php` for essential application setup. It features robust production error handling, security measures via `.htaccess` and security headers, and a planned multi-database architecture for isolating identity, PII, and application data. Navigation is centrally managed, and the system supports both MySQL and PostgreSQL with a migration system for schema evolution. User management includes multiple account types and roles, and image processing uses PHP's GD library for optimization. Branding allows for customizable entity profiles, and the system includes internal notifications and messaging features. An automatic database installer simplifies initial setup.
