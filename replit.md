@@ -57,12 +57,14 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
     - **Scoring Rules**: Configurable via rules (sum of top N anglers, best N results, weight vs points).
     - **Database**: New `club_challenges` table (challenger/challenged clubs, status, dates, ruleset), `challenge_competitions` join table, `challenge_results` for standings.
     - **UI**: "Challenges" tab in club admin for invite/accept/decline, challenge wizard, public display of active/past challenges.
-- **Internal Club Leaderboards (Planned)**: Customizable member ranking systems for each club:
-    - **Leaderboard Types**: Catch count, total weight, biggest fish, species variety, competition points.
-    - **Time Scopes**: Seasonal, all-time, or custom date ranges.
-    - **Calculation**: Automatic updates triggered by catch logs or competition results.
-    - **Database**: New `club_leaderboards` table (club_id, metric type, scope, rules), `leaderboard_entries` for cached ranks.
-    - **UI**: Club admin can create/configure leaderboards; member rankings displayed on club page and dashboards.
+- **Internal Club Leaderboards**: Customizable member ranking systems for each club:
+    - **Leaderboard Types**: Competition points, total catches, total weight, biggest fish, species variety.
+    - **Time Scopes**: This year, all-time, or custom date ranges.
+    - **Calculation**: Manual recalculation via admin UI; data sourced from catch logs, season standings, or competition results.
+    - **Database**: `club_leaderboards` table (club_id, metric type, scope, rules), `leaderboard_entries` for cached ranks.
+    - **Admin UI**: Committee members can create, toggle, recalculate, and delete leaderboards via `public/admin/leaderboards.php`.
+    - **Member View**: Polished leaderboard display with podium for top 3, full rankings table, and current user highlighting via `public/club_leaderboard.php`.
+    - **Club Page Integration**: Active leaderboards displayed on club page for members with quick navigation links.
 - **Gamification & Badges (Planned)**: Achievement system to reward engagement:
     - **Badge Types**: Challenge wins, leaderboard podium finishes, personal bests, species milestones, competition participation.
     - **Database**: New `badges` and `user_badges` tables.
