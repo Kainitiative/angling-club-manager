@@ -3,11 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/layout/member_shell.php';
-
-require_login();
+require_once __DIR__ . '/../app/layout/public_shell.php';
 
 $userId = current_user_id();
-$isLoggedIn = true;
+$isLoggedIn = (bool)$userId;
 
 $userCountry = '';
 $userTown = '';
@@ -77,7 +76,11 @@ $fishingStyleLabels = [
   'lure' => 'Lure',
 ];
 
-member_shell_start($pdo, ['title' => 'Browse Clubs', 'page' => 'clubs', 'section' => 'Main']);
+if ($isLoggedIn) {
+  member_shell_start($pdo, ['title' => 'Browse Clubs', 'page' => 'clubs', 'section' => 'Main']);
+} else {
+  public_shell_start('Browse Clubs');
+}
 ?>
 <style>
   .club-card { transition: transform 0.2s, box-shadow 0.2s; }
@@ -227,4 +230,10 @@ member_shell_start($pdo, ['title' => 'Browse Clubs', 'page' => 'clubs', 'section
   </div>
 <?php endif; ?>
 
-<?php member_shell_end(); ?>
+<?php 
+if ($isLoggedIn) {
+  member_shell_end();
+} else {
+  public_shell_end();
+}
+?>

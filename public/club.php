@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/layout/member_shell.php';
-
-require_login();
+require_once __DIR__ . '/../app/layout/public_shell.php';
 
 $slug = $_GET['slug'] ?? '';
 $message = '';
@@ -298,7 +297,11 @@ $billingPeriodLabels = [
 
 $pageTitle = e($club['name']);
 $currentPage = 'club';
-member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Clubs']);
+if ($isLoggedIn) {
+  member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Clubs']);
+} else {
+  public_shell_start($pageTitle);
+}
 ?>
 <style>
   :root {
@@ -963,4 +966,10 @@ member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'sectio
 </div>
 <?php endif; ?>
 
-<?php member_shell_end(); ?>
+<?php 
+if ($isLoggedIn) {
+  member_shell_end();
+} else {
+  public_shell_end();
+}
+?>
