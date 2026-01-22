@@ -281,6 +281,49 @@ CREATE TABLE IF NOT EXISTS season_standings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================
+-- CLUB LEADERBOARDS
+-- =========================
+CREATE TABLE IF NOT EXISTS club_leaderboards (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  club_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  description TEXT NULL,
+  metric_type ENUM('competition_points', 'total_catches', 'total_weight', 'biggest_fish', 'species_count') NOT NULL DEFAULT 'competition_points',
+  time_scope ENUM('all_time', 'this_year', 'this_season', 'custom') NOT NULL DEFAULT 'this_year',
+  start_date DATE NULL,
+  end_date DATE NULL,
+  season_id BIGINT UNSIGNED NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  display_order INT NOT NULL DEFAULT 0,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_leaderboards_club FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
+  CONSTRAINT fk_leaderboards_season FOREIGN KEY (season_id) REFERENCES competition_seasons(id) ON DELETE SET NULL,
+  CONSTRAINT fk_leaderboards_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_leaderboards_club (club_id),
+  INDEX idx_leaderboards_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================
+-- LEADERBOARD ENTRIES (cached rankings)
+-- =========================
+CREATE TABLE IF NOT EXISTS leaderboard_entries (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  leaderboard_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  score DECIMAL(12,3) NOT NULL DEFAULT 0,
+  rank_position INT NULL,
+  competitions_count INT NOT NULL DEFAULT 0,
+  catches_count INT NOT NULL DEFAULT 0,
+  calculated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_entries_leaderboard FOREIGN KEY (leaderboard_id) REFERENCES club_leaderboards(id) ON DELETE CASCADE,
+  CONSTRAINT fk_entries_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_leaderboard_user (leaderboard_id, user_id),
+  INDEX idx_entries_rank (leaderboard_id, rank_position)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================
 -- FISH SPECIES
 -- =========================
 CREATE TABLE IF NOT EXISTS fish_species (

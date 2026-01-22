@@ -215,6 +215,20 @@ $stmt = $pdo->prepare("SELECT * FROM club_profile_settings WHERE club_id = ?");
 $stmt->execute([$club['id']]);
 $profileSettings = $stmt->fetch();
 
+$clubLeaderboards = [];
+if ($isMember || $isAdmin) {
+  $stmt = $pdo->prepare("
+    SELECT cl.*, 
+           (SELECT COUNT(*) FROM leaderboard_entries WHERE leaderboard_id = cl.id) as entry_count
+    FROM club_leaderboards cl
+    WHERE cl.club_id = ? AND cl.is_active = 1
+    ORDER BY cl.display_order, cl.created_at DESC
+    LIMIT 3
+  ");
+  $stmt->execute([$club['id']]);
+  $clubLeaderboards = $stmt->fetchAll();
+}
+
 $stmt = $pdo->prepare("SELECT * FROM club_membership_fees WHERE club_id = ? AND is_active = 1 ORDER BY display_order, id");
 $stmt->execute([$club['id']]);
 $membershipFees = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -768,6 +782,66 @@ $billingPeriodLabels = [
                 </div>
               <?php endforeach; ?>
             </div>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($clubLeaderboards)): ?>
+        <div class="card mb-4">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Club Leaderboards</h5>
+            <?php if ($isAdmin || $isCommittee): ?>
+              <a href="/public/admin/leaderboards.php?club_id=<?= $club['id'] ?>" class="btn btn-outline-primary btn-sm">Manage</a>
+            <?php endif; ?>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <?php 
+              $metricLabels = [
+                'competition_points' => 'Points',
+                'total_catches' => 'Catches',
+                'total_weight' => 'Weight',
+                'biggest_fish' => 'Biggest',
+                'species_count' => 'Species'
+              ];
+              $metricIcons = [
+                'competition_points' => 'trophy',
+                'total_catches' => 'water',
+                'total_weight' => 'speedometer2',
+                'biggest_fish' => 'award',
+                'species_count' => 'collection'
+              ];
+              foreach ($clubLeaderboards as $lb): 
+              ?>
+                <div class="col-12">
+                  <a href="/public/club_leaderboard.php?id=<?= $lb['id'] ?>" class="text-decoration-none">
+                    <div class="card border h-100" style="transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                      <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 class="mb-1 text-dark"><?= e($lb['name']) ?></h6>
+                            <small class="text-muted">
+                              <i class="bi bi-<?= $metricIcons[$lb['metric_type']] ?? 'graph-up' ?> me-1"></i>
+                              <?= $metricLabels[$lb['metric_type']] ?? $lb['metric_type'] ?>
+                              &bull; <?= $lb['entry_count'] ?> members
+                            </small>
+                          </div>
+                          <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        </div>
+      <?php elseif ($isAdmin || $isCommittee): ?>
+        <div class="card mb-4">
+          <div class="card-body text-center py-4">
+            <i class="bi bi-trophy fs-2 text-muted mb-2"></i>
+            <p class="text-muted mb-2">Create leaderboards to track member rankings</p>
+            <a href="/public/admin/leaderboards.php?club_id=<?= $club['id'] ?>" class="btn btn-primary btn-sm">Create Leaderboard</a>
           </div>
         </div>
       <?php endif; ?>
