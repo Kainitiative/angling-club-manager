@@ -48,6 +48,42 @@ $isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
 $financeTable = $isPostgres ? 'club_transactions' : 'club_finances';
 $typeCol = $isPostgres ? 'transaction_type' : 'type';
 
+if (!$isPostgres) {
+  try {
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS club_finances (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        club_id BIGINT UNSIGNED NOT NULL,
+        account_id BIGINT UNSIGNED NULL,
+        type ENUM('income', 'expense') NOT NULL,
+        category VARCHAR(120) NOT NULL DEFAULT 'other',
+        amount DECIMAL(10,2) NOT NULL,
+        description TEXT NULL,
+        transaction_date DATE NOT NULL,
+        receipt_url VARCHAR(500) NULL,
+        created_by BIGINT UNSIGNED NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_finances_club (club_id),
+        INDEX idx_finances_date (transaction_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS club_accounts (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        club_id BIGINT UNSIGNED NOT NULL,
+        account_name VARCHAR(120) NOT NULL,
+        account_type ENUM('bank', 'cash', 'paypal', 'stripe', 'other') NOT NULL DEFAULT 'bank',
+        balance DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        notes TEXT NULL,
+        is_default TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_accounts_club (club_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+  } catch (PDOException $e) {
+  }
+}
+
 $categories = [
   'membership' => 'Membership Fees',
   'sponsorship' => 'Sponsorship',

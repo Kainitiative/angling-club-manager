@@ -521,8 +521,10 @@ CREATE TABLE IF NOT EXISTS club_finances (
 CREATE TABLE IF NOT EXISTS club_accounts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   club_id BIGINT UNSIGNED NOT NULL,
-  name VARCHAR(120) NOT NULL,
+  account_name VARCHAR(120) NOT NULL,
+  account_type ENUM('bank', 'cash', 'paypal', 'stripe', 'other') NOT NULL DEFAULT 'bank',
   balance DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  notes TEXT NULL,
   is_default TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_accounts_club FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
