@@ -159,7 +159,7 @@ if ($selectedClubId && $selectedClub) {
     SELECT m.*, u.name as sender_name
     FROM messages m
     JOIN users u ON m.sender_id = u.id
-    WHERE m.club_id = ? AND m.recipient_id = ? AND m.is_announcement = 0
+    WHERE m.club_id = ? AND m.recipient_id = ?
     ORDER BY m.created_at DESC
     LIMIT 50
   ");

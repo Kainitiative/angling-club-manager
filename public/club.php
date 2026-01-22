@@ -199,7 +199,7 @@ if ($isMember || $isAdmin) {
     SELECT cl.*, 
            (SELECT COUNT(*) FROM leaderboard_entries WHERE leaderboard_id = cl.id) as entry_count
     FROM club_leaderboards cl
-    WHERE cl.club_id = ? AND cl.is_active = 1
+    WHERE cl.club_id = ? AND cl.is_active = true
     ORDER BY cl.display_order, cl.created_at DESC
     LIMIT 3
   ");
@@ -207,17 +207,9 @@ if ($isMember || $isAdmin) {
   $clubLeaderboards = $stmt->fetchAll();
 }
 
-$stmt = $pdo->prepare("SELECT * FROM club_membership_fees WHERE club_id = ? AND is_active = 1 ORDER BY display_order, id");
-$stmt->execute([$club['id']]);
-$membershipFees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt = $pdo->prepare("SELECT * FROM club_perks WHERE club_id = ? ORDER BY display_order, id");
-$stmt->execute([$club['id']]);
-$clubPerks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-$stmt = $pdo->prepare("SELECT * FROM club_gallery WHERE club_id = ? ORDER BY display_order, id");
-$stmt->execute([$club['id']]);
-$clubGallery = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$membershipFees = [];
+$clubPerks = [];
+$clubGallery = [];
 
 $stmt = $pdo->prepare("SELECT * FROM sponsors WHERE club_id = ? ORDER BY display_order, name");
 $stmt->execute([$club['id']]);
