@@ -44,6 +44,10 @@ if (!$canView) {
   exit('Access denied. Only committee members can view club finances.');
 }
 
+$isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
+$financeTable = $isPostgres ? 'club_transactions' : 'club_finances';
+$typeCol = $isPostgres ? 'transaction_type' : 'type';
+
 $categories = [
   'membership' => 'Membership Fees',
   'sponsorship' => 'Sponsorship',
@@ -80,13 +84,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
       $message = 'Account added.';
       $messageType = 'success';
     }
-  } elseif ($action === 'update_balance') {
+  } elseif ($action === 'update_account') {
     $accountId = (int)($_POST['account_id'] ?? 0);
+    $accountName = trim($_POST['account_name'] ?? '');
+    $accountType = $_POST['account_type'] ?? 'bank';
     $balance = (float)($_POST['balance'] ?? 0);
-    if ($accountId) {
-      $stmt = $pdo->prepare("UPDATE club_accounts SET balance = ? WHERE id = ? AND club_id = ?");
-      $stmt->execute([$balance, $accountId, $clubId]);
-      $message = 'Balance updated.';
+    $notes = trim($_POST['notes'] ?? '') ?: null;
+    
+    if ($accountId && $accountName) {
+      $stmt = $pdo->prepare("UPDATE club_accounts SET account_name = ?, account_type = ?, balance = ?, notes = ? WHERE id = ? AND club_id = ?");
+      $stmt->execute([$accountName, $accountType, $balance, $notes, $accountId, $clubId]);
+      $message = 'Account updated.';
       $messageType = 'success';
     }
   } elseif ($action === 'delete_account') {
@@ -95,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
       $stmt = $pdo->prepare("DELETE FROM club_accounts WHERE id = ? AND club_id = ?");
       $stmt->execute([$accountId, $clubId]);
       $message = 'Account deleted.';
-      $messageType = 'success';
+      $messageType = 'info';
     }
   } elseif ($action === 'add') {
     $entryType = $_POST['entry_type'] ?? '';
@@ -103,10 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
     $amount = (float)($_POST['amount'] ?? 0);
     $entryDate = $_POST['entry_date'] ?? date('Y-m-d');
     $category = $_POST['category'] ?? 'other';
-    $notes = trim($_POST['notes'] ?? '');
     
     if (!in_array($entryType, ['income', 'expense'])) {
-      $message = 'Please select income or expense.';
+      $message = 'Invalid entry type.';
       $messageType = 'danger';
     } elseif (empty($title)) {
       $message = 'Please enter a title.';
@@ -115,17 +122,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
       $message = 'Please enter a valid amount.';
       $messageType = 'danger';
     } else {
-      $stmt = $pdo->prepare("
-        INSERT INTO club_transactions (club_id, transaction_type, description, amount, transaction_date, category, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      ");
+      if ($isPostgres) {
+        $stmt = $pdo->prepare("
+          INSERT INTO $financeTable (club_id, transaction_type, description, amount, transaction_date, category, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+      } else {
+        $stmt = $pdo->prepare("
+          INSERT INTO $financeTable (club_id, type, description, amount, transaction_date, category, created_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+      }
       $stmt->execute([$clubId, $entryType, $title, $amount, $entryDate, $category, $userId]);
       $message = ucfirst($entryType) . ' entry added successfully.';
       $messageType = 'success';
     }
   } elseif ($action === 'delete') {
     $entryId = (int)($_POST['entry_id'] ?? 0);
-    $stmt = $pdo->prepare("DELETE FROM club_transactions WHERE id = ? AND club_id = ?");
+    $stmt = $pdo->prepare("DELETE FROM $financeTable WHERE id = ? AND club_id = ?");
     $stmt->execute([$entryId, $clubId]);
     $message = 'Entry deleted.';
     $messageType = 'info';
@@ -134,7 +148,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
 
 $whereClause = "ct.club_id = ?";
 $params = [$clubId];
-$isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
 
 if ($filterMonth && $filterYear) {
   if ($isPostgres) {
@@ -158,14 +171,25 @@ if ($filterCategory) {
   $params[] = $filterCategory;
 }
 
-$stmt = $pdo->prepare("
-  SELECT ct.*, ct.transaction_date as entry_date, ct.transaction_type as entry_type,
-         u.name as created_by_name
-  FROM club_transactions ct
-  LEFT JOIN users u ON ct.created_by = u.id
-  WHERE $whereClause
-  ORDER BY ct.transaction_date DESC, ct.created_at DESC
-");
+if ($isPostgres) {
+  $stmt = $pdo->prepare("
+    SELECT ct.*, ct.transaction_date as entry_date, ct.transaction_type as entry_type,
+           u.name as created_by_name
+    FROM $financeTable ct
+    LEFT JOIN users u ON ct.created_by = u.id
+    WHERE $whereClause
+    ORDER BY ct.transaction_date DESC, ct.created_at DESC
+  ");
+} else {
+  $stmt = $pdo->prepare("
+    SELECT ct.*, ct.transaction_date as entry_date, ct.type as entry_type,
+           u.name as created_by_name
+    FROM $financeTable ct
+    LEFT JOIN users u ON ct.created_by = u.id
+    WHERE $whereClause
+    ORDER BY ct.transaction_date DESC, ct.created_at DESC
+  ");
+}
 $stmt->execute($params);
 $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -181,9 +205,9 @@ foreach ($entries as $entry) {
 $balance = $totalIncome - $totalExpense;
 
 if ($isPostgres) {
-  $stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
+  $stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
 } else {
-  $stmt = $pdo->prepare("SELECT DISTINCT YEAR(transaction_date) as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
+  $stmt = $pdo->prepare("SELECT DISTINCT YEAR(transaction_date) as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
 }
 $stmt->execute([$clubId]);
 $availableYears = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -201,7 +225,7 @@ if ($showReport) {
         category,
         transaction_type as entry_type,
         SUM(amount) as total
-      FROM club_transactions
+      FROM $financeTable
       WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
       GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
       ORDER BY EXTRACT(MONTH FROM transaction_date)
@@ -211,11 +235,11 @@ if ($showReport) {
       SELECT 
         MONTH(transaction_date) as month,
         category,
-        transaction_type as entry_type,
+        type as entry_type,
         SUM(amount) as total
-      FROM club_transactions
+      FROM $financeTable
       WHERE club_id = ? AND YEAR(transaction_date) = ?
-      GROUP BY MONTH(transaction_date), category, transaction_type
+      GROUP BY MONTH(transaction_date), category, type
       ORDER BY MONTH(transaction_date)
     ");
   }
@@ -229,272 +253,177 @@ if ($showReport) {
       'month_name' => $monthNames[$m],
       'income' => 0,
       'expense' => 0,
-      'categories' => [],
+      'categories' => []
     ];
   }
   
   foreach ($rawReport as $row) {
     $m = (int)$row['month'];
-    $cat = $row['category'];
-    $type = $row['entry_type'];
-    $total = (float)$row['total'];
-    
-    if ($type === 'income') {
-      $reportData[$m]['income'] += $total;
+    if ($row['entry_type'] === 'income') {
+      $reportData[$m]['income'] += (float)$row['total'];
     } else {
-      $reportData[$m]['expense'] += $total;
+      $reportData[$m]['expense'] += (float)$row['total'];
     }
-    
-    if (!isset($reportData[$m]['categories'][$cat])) {
-      $reportData[$m]['categories'][$cat] = ['income' => 0, 'expense' => 0];
-    }
-    $reportData[$m]['categories'][$cat][$type] += $total;
+    $reportData[$m]['categories'][$row['category']] = ($reportData[$m]['categories'][$row['category']] ?? 0) + (float)$row['total'];
   }
 }
 
 $accounts = [];
-$accountsTotal = 0;
 try {
-  $stmt = $pdo->prepare("SELECT * FROM club_accounts WHERE club_id = ? AND is_active = 1 ORDER BY account_name ASC");
+  $stmt = $pdo->prepare("SELECT * FROM club_accounts WHERE club_id = ? ORDER BY account_name");
   $stmt->execute([$clubId]);
   $accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-  foreach ($accounts as $acc) {
-    $accountsTotal += (float)$acc['balance'];
-  }
-} catch (Exception $e) {
+} catch (PDOException $e) {
   $accounts = [];
 }
 
-$currentPage = $showAccounts ? 'accounts' : ($showReport ? 'reports' : 'transactions');
-$pageTitle = 'Finances';
-$customStyles = '
-  .finance-card {
-    border-left: 4px solid #dee2e6;
-  }
-  .finance-card.income {
-    border-left-color: #198754;
-    background: #f8fff8;
-  }
-  .finance-card.expense {
-    border-left-color: #dc3545;
-    background: #fff8f8;
-  }
-  .summary-card {
-    border-radius: 12px;
-  }
-  .summary-card.income {
-    background: linear-gradient(135deg, #198754 0%, #28a745 100%);
-    color: white;
-  }
-  .summary-card.expense {
-    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);
-    color: white;
-  }
-  .summary-card.balance {
-    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-    color: white;
-  }
-  .summary-card.balance.negative {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-  }
-  .category-badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-  }
-  .report-table th {
-    background: #f8f9fa;
-  }
-  .nav-pills .nav-link.active {
-    background: var(--sidebar-active);
-  }
-';
+$accountTypes = [
+  'bank' => 'Bank Account',
+  'cash' => 'Cash',
+  'paypal' => 'PayPal',
+  'stripe' => 'Stripe',
+  'other' => 'Other'
+];
 
-club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Finances']);
+$pageTitle = 'Finances';
+$breadcrumbs = [
+  ['label' => 'Dashboard', 'url' => '/public/dashboard.php'],
+  ['label' => e($club['name']), 'url' => '/public/club.php?slug=' . e($club['slug'])],
+  ['label' => 'Finances']
+];
+
+ob_start();
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h4 class="mb-1">Club Finances</h4>
-  </div>
-  <div>
-    <ul class="nav nav-pills">
-      <li class="nav-item">
-        <a class="nav-link <?= !$showReport && !$showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">Transactions</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <?= $showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&accounts=1">Accounts</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link <?= $showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&report=1&year=<?= $filterYear ?: date('Y') ?>">Summary Report</a>
-      </li>
-    </ul>
-  </div>
-</div>
-
+<div class="container-fluid py-4">
   <?php if ($message): ?>
     <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
       <?= e($message) ?>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>
 
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <h6 class="card-title mb-1">Total Income</h6>
+          <h3 class="mb-0">&euro;<?= number_format($totalIncome, 2) ?></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-danger text-white">
+        <div class="card-body text-center">
+          <h6 class="card-title mb-1">Total Expenses</h6>
+          <h3 class="mb-0">&euro;<?= number_format($totalExpense, 2) ?></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card <?= $balance >= 0 ? 'bg-primary' : 'bg-warning' ?> text-white">
+        <div class="card-body text-center">
+          <h6 class="card-title mb-1">Balance</h6>
+          <h3 class="mb-0">&euro;<?= number_format($balance, 2) ?></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link <?= !$showReport && !$showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>">
+        <i class="bi bi-list-ul"></i> Transactions
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <?= $showReport ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&report=1">
+        <i class="bi bi-bar-chart"></i> Reports
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link <?= $showAccounts ? 'active' : '' ?>" href="?club_id=<?= $clubId ?>&accounts=1">
+        <i class="bi bi-wallet2"></i> Accounts
+      </a>
+    </li>
+  </ul>
+
   <?php if ($showAccounts): ?>
-    
-    <div class="card mb-4" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white;">
-      <div class="card-body text-center py-4">
-        <h6 class="text-white-50 mb-1">Total Across All Accounts</h6>
-        <h2 class="mb-0">&euro;<?= number_format($accountsTotal, 2) ?></h2>
-        <small class="text-white-50"><?= count($accounts) ?> active account<?= count($accounts) !== 1 ? 's' : '' ?></small>
-      </div>
-    </div>
-    
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5>Club Accounts</h5>
-      <?php if ($canEdit): ?>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-          <i class="bi bi-plus-lg"></i> Add Account
-        </button>
-      <?php endif; ?>
-    </div>
-    
-    <?php if (empty($accounts)): ?>
-      <div class="card">
-        <div class="card-body text-center py-5">
-          <h5>No accounts yet</h5>
-          <p class="text-muted">Add your club's bank accounts, cash floats, or other funds to track the total balance.</p>
-        </div>
-      </div>
-    <?php else: ?>
-      <div class="row g-3">
-        <?php foreach ($accounts as $account): ?>
-          <div class="col-md-6 col-lg-4">
-            <div class="card h-100">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <h5 class="mb-0"><?= e($account['account_name']) ?></h5>
-                    <small class="text-muted"><?= ucfirst($account['account_type']) ?></small>
-                  </div>
-                  <?php if ($canEdit): ?>
-                    <form method="post" onsubmit="return confirm('Delete this account?');" class="d-inline">
-                      <input type="hidden" name="action" value="delete_account">
-                      <input type="hidden" name="account_id" value="<?= $account['id'] ?>">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">&times;</button>
-                    </form>
-                  <?php endif; ?>
-                </div>
-                <h3 class="mb-2 <?= (float)$account['balance'] < 0 ? 'text-danger' : 'text-success' ?>">
-                  &euro;<?= number_format((float)$account['balance'], 2) ?>
-                </h3>
-                <?php if ($account['notes']): ?>
-                  <p class="text-muted small mb-2"><?= e($account['notes']) ?></p>
-                <?php endif; ?>
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                  <small class="text-muted">Updated: <?= date('j M Y', strtotime($account['last_updated'])) ?></small>
-                  <?php if ($canEdit): ?>
-                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal<?= $account['id'] ?>">
-                      Update
-                    </button>
-                  <?php endif; ?>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <?php if ($canEdit): ?>
-          <div class="modal fade" id="updateModal<?= $account['id'] ?>" tabindex="-1">
-            <div class="modal-dialog modal-sm">
-              <div class="modal-content">
-                <form method="post">
-                  <input type="hidden" name="action" value="update_balance">
-                  <input type="hidden" name="account_id" value="<?= $account['id'] ?>">
-                  <div class="modal-header">
-                    <h6 class="modal-title">Update Balance</h6>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                  </div>
-                  <div class="modal-body">
-                    <label class="form-label"><?= e($account['account_name']) ?></label>
-                    <div class="input-group">
-                      <span class="input-group-text">&euro;</span>
-                      <input type="number" name="balance" class="form-control" step="0.01" value="<?= number_format((float)$account['balance'], 2, '.', '') ?>" required>
-                    </div>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary w-100">Save</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          <?php endif; ?>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-    
-    <?php if ($canEdit): ?>
-    <div class="modal fade" id="addAccountModal" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form method="post">
-            <input type="hidden" name="action" value="add_account">
-            <div class="modal-header">
-              <h5 class="modal-title">Add Account</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Account Name *</label>
-                <input type="text" name="account_name" class="form-control" required placeholder="e.g., AIB Current Account, Petty Cash">
-              </div>
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Type</label>
-                  <select name="account_type" class="form-select">
-                    <option value="bank">Bank Account</option>
-                    <option value="cash">Cash</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Current Balance (&euro;)</label>
-                  <input type="number" name="balance" class="form-control" step="0.01" value="0.00">
-                </div>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Notes (optional)</label>
-                <textarea name="notes" class="form-control" rows="2" placeholder="e.g., Main club account"></textarea>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-primary">Add Account</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    <?php endif; ?>
-    
-  <?php elseif ($showReport): ?>
-    
     <div class="card mb-4">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Financial Summary Report</h5>
-        <form method="get" class="d-flex gap-2">
-          <input type="hidden" name="club_id" value="<?= $clubId ?>">
-          <input type="hidden" name="report" value="1">
-          <select name="year" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
-            <?php foreach ($availableYears as $y): ?>
-              <option value="<?= $y ?>" <?= ($filterYear ?: date('Y')) == $y ? 'selected' : '' ?>><?= $y ?></option>
-            <?php endforeach; ?>
-          </select>
-        </form>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wallet2"></i> Club Accounts</span>
+        <?php if ($canEdit): ?>
+          <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+            <i class="bi bi-plus-lg"></i> Add Account
+          </button>
+        <?php endif; ?>
       </div>
       <div class="card-body">
+        <?php if (empty($accounts)): ?>
+          <p class="text-muted text-center my-4">No accounts set up yet.</p>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Account Name</th>
+                  <th>Type</th>
+                  <th class="text-end">Balance</th>
+                  <th>Notes</th>
+                  <?php if ($canEdit): ?>
+                    <th class="text-center">Actions</th>
+                  <?php endif; ?>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($accounts as $account): ?>
+                  <tr>
+                    <td><?= e($account['account_name'] ?? $account['name'] ?? '') ?></td>
+                    <td><?= e($accountTypes[$account['account_type'] ?? $account['type'] ?? 'other'] ?? 'Other') ?></td>
+                    <td class="text-end">&euro;<?= number_format((float)($account['balance'] ?? 0), 2) ?></td>
+                    <td><?= e($account['notes'] ?? '') ?></td>
+                    <?php if ($canEdit): ?>
+                      <td class="text-center">
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Delete this account?')">
+                          <input type="hidden" name="action" value="delete_account">
+                          <input type="hidden" name="account_id" value="<?= $account['id'] ?>">
+                          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                      </td>
+                    <?php endif; ?>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+  <?php elseif ($showReport): ?>
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-bar-chart"></i> Financial Report - <?= $filterYear ?: date('Y') ?>
+      </div>
+      <div class="card-body">
+        <form method="GET" class="row g-3 mb-4">
+          <input type="hidden" name="club_id" value="<?= $clubId ?>">
+          <input type="hidden" name="report" value="1">
+          <div class="col-auto">
+            <select name="year" class="form-select">
+              <?php foreach ($availableYears as $y): ?>
+                <option value="<?= $y ?>" <?= $filterYear == $y ? 'selected' : '' ?>><?= $y ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-primary">View Report</button>
+          </div>
+        </form>
+        
         <div class="table-responsive">
-          <table class="table table-hover report-table">
-            <thead>
+          <table class="table table-bordered">
+            <thead class="table-light">
               <tr>
                 <th>Month</th>
                 <th class="text-end text-success">Income</th>
@@ -504,53 +433,27 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
             </thead>
             <tbody>
               <?php 
-              $yearIncome = 0;
-              $yearExpense = 0;
+              $yearTotalIncome = 0;
+              $yearTotalExpense = 0;
               foreach ($reportData as $m => $data): 
                 $net = $data['income'] - $data['expense'];
-                $yearIncome += $data['income'];
-                $yearExpense += $data['expense'];
+                $yearTotalIncome += $data['income'];
+                $yearTotalExpense += $data['expense'];
               ?>
                 <tr>
-                  <td>
-                    <strong><?= $data['month_name'] ?></strong>
-                    <?php if (!empty($data['categories'])): ?>
-                      <div class="small text-muted">
-                        <?php foreach ($data['categories'] as $catKey => $catData): ?>
-                          <?php if ($catData['income'] > 0 || $catData['expense'] > 0): ?>
-                            <span class="me-2"><?= $categories[$catKey] ?? ucfirst($catKey) ?>: 
-                              <?php if ($catData['income'] > 0): ?>
-                                <span class="text-success">+&euro;<?= number_format($catData['income'], 2) ?></span>
-                              <?php endif; ?>
-                              <?php if ($catData['expense'] > 0): ?>
-                                <span class="text-danger">-&euro;<?= number_format($catData['expense'], 2) ?></span>
-                              <?php endif; ?>
-                            </span>
-                          <?php endif; ?>
-                        <?php endforeach; ?>
-                      </div>
-                    <?php endif; ?>
-                  </td>
-                  <td class="text-end text-success"><?= $data['income'] > 0 ? '&euro;' . number_format($data['income'], 2) : '-' ?></td>
-                  <td class="text-end text-danger"><?= $data['expense'] > 0 ? '&euro;' . number_format($data['expense'], 2) : '-' ?></td>
-                  <td class="text-end <?= $net >= 0 ? 'text-success' : 'text-danger' ?>">
-                    <?php if ($data['income'] > 0 || $data['expense'] > 0): ?>
-                      <?= $net >= 0 ? '+' : '' ?>&euro;<?= number_format($net, 2) ?>
-                    <?php else: ?>
-                      -
-                    <?php endif; ?>
-                  </td>
+                  <td><?= $data['month_name'] ?></td>
+                  <td class="text-end text-success">&euro;<?= number_format($data['income'], 2) ?></td>
+                  <td class="text-end text-danger">&euro;<?= number_format($data['expense'], 2) ?></td>
+                  <td class="text-end <?= $net >= 0 ? 'text-success' : 'text-danger' ?>">&euro;<?= number_format($net, 2) ?></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
             <tfoot class="table-dark">
               <tr>
-                <th>Year Total</th>
-                <th class="text-end">&euro;<?= number_format($yearIncome, 2) ?></th>
-                <th class="text-end">&euro;<?= number_format($yearExpense, 2) ?></th>
-                <th class="text-end <?= ($yearIncome - $yearExpense) >= 0 ? '' : 'text-danger' ?>">
-                  <?= ($yearIncome - $yearExpense) >= 0 ? '+' : '' ?>&euro;<?= number_format($yearIncome - $yearExpense, 2) ?>
-                </th>
+                <th>Total</th>
+                <th class="text-end">&euro;<?= number_format($yearTotalIncome, 2) ?></th>
+                <th class="text-end">&euro;<?= number_format($yearTotalExpense, 2) ?></th>
+                <th class="text-end">&euro;<?= number_format($yearTotalIncome - $yearTotalExpense, 2) ?></th>
               </tr>
             </tfoot>
           </table>
@@ -558,93 +461,26 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header bg-white">
-        <h5 class="mb-0">Category Breakdown</h5>
-      </div>
-      <div class="card-body">
-        <?php
-        $categoryTotals = [];
-        foreach ($reportData as $data) {
-          foreach ($data['categories'] as $catKey => $catData) {
-            if (!isset($categoryTotals[$catKey])) {
-              $categoryTotals[$catKey] = ['income' => 0, 'expense' => 0];
-            }
-            $categoryTotals[$catKey]['income'] += $catData['income'];
-            $categoryTotals[$catKey]['expense'] += $catData['expense'];
-          }
-        }
-        arsort($categoryTotals);
-        ?>
-        <?php if (empty($categoryTotals)): ?>
-          <p class="text-muted text-center mb-0">No data for this year.</p>
-        <?php else: ?>
-          <div class="row">
-            <?php foreach ($categoryTotals as $catKey => $catData): ?>
-              <div class="col-md-4 mb-3">
-                <div class="card h-100">
-                  <div class="card-body">
-                    <h6 class="card-title"><?= $categories[$catKey] ?? ucfirst($catKey) ?></h6>
-                    <div class="d-flex justify-content-between">
-                      <span class="text-success">+&euro;<?= number_format($catData['income'], 2) ?></span>
-                      <span class="text-danger">-&euro;<?= number_format($catData['expense'], 2) ?></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            <?php endforeach; ?>
+  <?php else: ?>
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-list-ul"></i> Transactions</span>
+        <?php if ($canEdit): ?>
+          <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal">
+              <i class="bi bi-plus-lg"></i> Add Income
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+              <i class="bi bi-dash-lg"></i> Add Expense
+            </button>
           </div>
         <?php endif; ?>
       </div>
-    </div>
-
-  <?php else: ?>
-
-    <div class="row g-3 mb-4">
-      <div class="col-md-4">
-        <div class="card summary-card income">
-          <div class="card-body text-center py-4">
-            <div class="small opacity-75 mb-1">Total Income<?= $filterMonth || $filterYear || $filterCategory ? ' (Filtered)' : '' ?></div>
-            <div class="fs-3 fw-bold">&euro;<?= number_format($totalIncome, 2) ?></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card summary-card expense">
-          <div class="card-body text-center py-4">
-            <div class="small opacity-75 mb-1">Total Expenses<?= $filterMonth || $filterYear || $filterCategory ? ' (Filtered)' : '' ?></div>
-            <div class="fs-3 fw-bold">&euro;<?= number_format($totalExpense, 2) ?></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card summary-card balance <?= $balance < 0 ? 'negative' : '' ?>">
-          <div class="card-body text-center py-4">
-            <div class="small opacity-75 mb-1">Balance</div>
-            <div class="fs-3 fw-bold"><?= $balance < 0 ? '-' : '' ?>&euro;<?= number_format(abs($balance), 2) ?></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-4">
       <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="GET" class="row g-3 mb-4">
           <input type="hidden" name="club_id" value="<?= $clubId ?>">
           <div class="col-auto">
-            <label class="form-label small">Month</label>
-            <select name="month" class="form-select form-select-sm">
-              <option value="">All Months</option>
-              <?php 
-              $months = ['1' => 'January', '2' => 'February', '3' => 'March', '4' => 'April', '5' => 'May', '6' => 'June', '7' => 'July', '8' => 'August', '9' => 'September', '10' => 'October', '11' => 'November', '12' => 'December'];
-              foreach ($months as $num => $name): ?>
-                <option value="<?= $num ?>" <?= $filterMonth == $num ? 'selected' : '' ?>><?= $name ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-auto">
-            <label class="form-label small">Year</label>
-            <select name="year" class="form-select form-select-sm">
+            <select name="year" class="form-select">
               <option value="">All Years</option>
               <?php foreach ($availableYears as $y): ?>
                 <option value="<?= $y ?>" <?= $filterYear == $y ? 'selected' : '' ?>><?= $y ?></option>
@@ -652,137 +488,204 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
             </select>
           </div>
           <div class="col-auto">
-            <label class="form-label small">Category</label>
-            <select name="category" class="form-select form-select-sm">
+            <select name="month" class="form-select">
+              <option value="">All Months</option>
+              <?php for ($m = 1; $m <= 12; $m++): ?>
+                <option value="<?= $m ?>" <?= $filterMonth == $m ? 'selected' : '' ?>><?= date('F', mktime(0, 0, 0, $m, 1)) ?></option>
+              <?php endfor; ?>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select name="category" class="form-select">
               <option value="">All Categories</option>
               <?php foreach ($categories as $key => $label): ?>
-                <option value="<?= $key ?>" <?= $filterCategory == $key ? 'selected' : '' ?>><?= $label ?></option>
+                <option value="<?= $key ?>" <?= $filterCategory === $key ? 'selected' : '' ?>><?= $label ?></option>
               <?php endforeach; ?>
             </select>
           </div>
           <div class="col-auto">
-            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-            <?php if ($filterMonth || $filterYear || $filterCategory): ?>
-              <a href="?club_id=<?= $clubId ?>" class="btn btn-outline-secondary btn-sm">Clear</a>
-            <?php endif; ?>
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="?club_id=<?= $clubId ?>" class="btn btn-outline-secondary">Clear</a>
           </div>
         </form>
-      </div>
-    </div>
-
-    <div class="row">
-      <?php if ($canEdit): ?>
-      <div class="col-lg-4 mb-4">
-        <div class="card">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Add Entry</h5>
-          </div>
-          <div class="card-body">
-            <form method="post">
-              <input type="hidden" name="action" value="add">
-              
-              <div class="mb-3">
-                <label class="form-label">Type</label>
-                <div class="btn-group w-100" role="group">
-                  <input type="radio" class="btn-check" name="entry_type" id="type_income" value="income" checked>
-                  <label class="btn btn-outline-success" for="type_income">Income</label>
-                  <input type="radio" class="btn-check" name="entry_type" id="type_expense" value="expense">
-                  <label class="btn btn-outline-danger" for="type_expense">Expense</label>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="category" class="form-label">Category</label>
-                <select class="form-select" id="category" name="category">
-                  <?php foreach ($categories as $key => $label): ?>
-                    <option value="<?= $key ?>"><?= $label ?></option>
-                  <?php endforeach; ?>
-                </select>
-              </div>
-              
-              <div class="mb-3">
-                <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="title" name="title" required placeholder="e.g., Annual membership, New rods">
-              </div>
-              
-              <div class="mb-3">
-                <label for="amount" class="form-label">Amount (&euro;) <span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0.01" required placeholder="0.00">
-              </div>
-              
-              <div class="mb-3">
-                <label for="entry_date" class="form-label">Date</label>
-                <input type="date" class="form-control" id="entry_date" name="entry_date" value="<?= date('Y-m-d') ?>">
-              </div>
-              
-              <div class="mb-3">
-                <label for="notes" class="form-label">Notes</label>
-                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Optional details"></textarea>
-              </div>
-              
-              <button type="submit" class="btn btn-primary w-100">Add Entry</button>
-            </form>
-          </div>
-        </div>
-      </div>
-      <?php endif; ?>
-      
-      <div class="<?= $canEdit ? 'col-lg-8' : 'col-12' ?>">
-        <div class="card">
-          <div class="card-header bg-white">
-            <h5 class="mb-0">Transaction History</h5>
-          </div>
-          <div class="card-body">
-            <?php if (empty($entries)): ?>
-              <div class="text-center py-4">
-                <p class="text-muted mb-0">No financial entries<?= ($filterMonth || $filterYear || $filterCategory) ? ' matching your filters' : ' yet' ?>.</p>
-              </div>
-            <?php else: ?>
-              <div class="list-group list-group-flush">
+        
+        <?php if (empty($entries)): ?>
+          <p class="text-muted text-center my-4">No transactions found.</p>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th class="text-end">Amount</th>
+                  <th>Added By</th>
+                  <?php if ($canEdit): ?>
+                    <th class="text-center">Actions</th>
+                  <?php endif; ?>
+                </tr>
+              </thead>
+              <tbody>
                 <?php foreach ($entries as $entry): ?>
-                  <div class="list-group-item finance-card <?= $entry['entry_type'] ?> mb-2 rounded">
-                    <div class="d-flex justify-content-between align-items-start">
-                      <div>
-                        <div class="d-flex align-items-center mb-1">
-                          <?php if ($entry['entry_type'] === 'income'): ?>
-                            <span class="badge bg-success me-2">Income</span>
-                          <?php else: ?>
-                            <span class="badge bg-danger me-2">Expense</span>
-                          <?php endif; ?>
-                          <span class="badge bg-secondary category-badge me-2"><?= $categories[$entry['category'] ?? 'other'] ?? 'Other' ?></span>
-                          <strong><?= e($entry['title']) ?></strong>
-                        </div>
-                        <div class="small text-muted">
-                          <?= date('j M Y', strtotime($entry['entry_date'])) ?>
-                          &bull; Added by <?= e($entry['created_by_name']) ?>
-                        </div>
-                        <?php if ($entry['notes']): ?>
-                          <div class="small text-muted mt-1"><?= e($entry['notes']) ?></div>
-                        <?php endif; ?>
-                      </div>
-                      <div class="text-end">
-                        <div class="fs-5 fw-bold <?= $entry['entry_type'] === 'income' ? 'text-success' : 'text-danger' ?>">
-                          <?= $entry['entry_type'] === 'income' ? '+' : '-' ?>&euro;<?= number_format((float)$entry['amount'], 2) ?>
-                        </div>
-                        <?php if ($canEdit): ?>
-                        <form method="post" class="d-inline" onsubmit="return confirm('Delete this entry?');">
+                  <tr>
+                    <td><?= date('d M Y', strtotime($entry['entry_date'])) ?></td>
+                    <td>
+                      <span class="badge bg-<?= $entry['entry_type'] === 'income' ? 'success' : 'danger' ?>">
+                        <?= ucfirst($entry['entry_type']) ?>
+                      </span>
+                    </td>
+                    <td><?= e($entry['description'] ?? '') ?></td>
+                    <td><?= e($categories[$entry['category']] ?? ucfirst($entry['category'] ?? 'Other')) ?></td>
+                    <td class="text-end <?= $entry['entry_type'] === 'income' ? 'text-success' : 'text-danger' ?>">
+                      <?= $entry['entry_type'] === 'income' ? '+' : '-' ?>&euro;<?= number_format((float)$entry['amount'], 2) ?>
+                    </td>
+                    <td><?= e($entry['created_by_name'] ?? 'Unknown') ?></td>
+                    <?php if ($canEdit): ?>
+                      <td class="text-center">
+                        <form method="POST" class="d-inline" onsubmit="return confirm('Delete this entry?')">
                           <input type="hidden" name="action" value="delete">
                           <input type="hidden" name="entry_id" value="<?= $entry['id'] ?>">
-                          <button type="submit" class="btn btn-link btn-sm text-danger p-0">Delete</button>
+                          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                         </form>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                  </div>
+                      </td>
+                    <?php endif; ?>
+                  </tr>
                 <?php endforeach; ?>
-              </div>
-            <?php endif; ?>
+              </tbody>
+            </table>
           </div>
-        </div>
+        <?php endif; ?>
       </div>
     </div>
-
   <?php endif; ?>
+</div>
+
+<?php if ($canEdit): ?>
+<div class="modal fade" id="addIncomeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST">
+        <input type="hidden" name="action" value="add">
+        <input type="hidden" name="entry_type" value="income">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Add Income</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <input type="text" name="title" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amount (&euro;)</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" name="entry_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-select">
+              <?php foreach ($categories as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Add Income</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addExpenseModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST">
+        <input type="hidden" name="action" value="add">
+        <input type="hidden" name="entry_type" value="expense">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="bi bi-dash-lg"></i> Add Expense</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <input type="text" name="title" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amount (&euro;)</label>
+            <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" name="entry_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-select">
+              <?php foreach ($categories as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Add Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST">
+        <input type="hidden" name="action" value="add_account">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-wallet2"></i> Add Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Account Name</label>
+            <input type="text" name="account_name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Account Type</label>
+            <select name="account_type" class="form-select">
+              <?php foreach ($accountTypes as $key => $label): ?>
+                <option value="<?= $key ?>"><?= $label ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Opening Balance (&euro;)</label>
+            <input type="number" name="balance" class="form-control" step="0.01" value="0">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes (Optional)</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php
-club_admin_shell_end();
+$content = ob_get_clean();
+render_club_admin_shell($pageTitle, $content, $clubId, $club, $breadcrumbs);

@@ -44,6 +44,14 @@ $message = '';
 $messageType = '';
 $errors = [];
 
+$hasPinnedColumn = false;
+try {
+  $checkCol = $pdo->query("SELECT is_pinned FROM club_news LIMIT 1");
+  $hasPinnedColumn = true;
+} catch (PDOException $e) {
+  $hasPinnedColumn = false;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
   
@@ -65,8 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (!$errors) {
       $publishedAt = $publishNow ? date('Y-m-d H:i:s') : null;
-      $stmt = $pdo->prepare("INSERT INTO club_news (club_id, author_id, title, content, is_pinned, published_at) VALUES (?, ?, ?, ?, ?, ?)");
-      $stmt->execute([$clubId, $userId, $title, $content, $isPinned, $publishedAt]);
+      if ($hasPinnedColumn) {
+        $stmt = $pdo->prepare("INSERT INTO club_news (club_id, author_id, title, content, is_pinned, published_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$clubId, $userId, $title, $content, $isPinned, $publishedAt]);
+      } else {
+        $stmt = $pdo->prepare("INSERT INTO club_news (club_id, author_id, title, content, published_at) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$clubId, $userId, $title, $content, $publishedAt]);
+      }
       $message = 'News article added successfully!';
       $messageType = 'success';
     }
@@ -78,10 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $messageType = 'info';
   } elseif ($action === 'toggle_pin') {
     $newsId = (int)($_POST['news_id'] ?? 0);
-    $stmt = $pdo->prepare("UPDATE club_news SET is_pinned = NOT is_pinned WHERE id = ? AND club_id = ?");
-    $stmt->execute([$newsId, $clubId]);
-    $message = 'Pin status updated.';
-    $messageType = 'success';
+    if ($hasPinnedColumn) {
+      $stmt = $pdo->prepare("UPDATE club_news SET is_pinned = NOT is_pinned WHERE id = ? AND club_id = ?");
+      $stmt->execute([$newsId, $clubId]);
+      $message = 'Pin status updated.';
+      $messageType = 'success';
+    } else {
+      $message = 'Pin feature not available. Please add the is_pinned column to your database.';
+      $messageType = 'warning';
+    }
   } elseif ($action === 'publish') {
     $newsId = (int)($_POST['news_id'] ?? 0);
     $stmt = $pdo->prepare("UPDATE club_news SET published_at = NOW() WHERE id = ? AND club_id = ? AND published_at IS NULL");
@@ -118,12 +136,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
+$orderBy = $hasPinnedColumn ? "n.is_pinned DESC, n.created_at DESC" : "n.created_at DESC";
 $stmt = $pdo->prepare("
   SELECT n.*, u.name as author_name 
   FROM club_news n 
   JOIN users u ON n.author_id = u.id 
   WHERE n.club_id = ? 
-  ORDER BY n.is_pinned DESC, n.created_at DESC
+  ORDER BY $orderBy
 ");
 $stmt->execute([$clubId]);
 $newsItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -259,7 +278,7 @@ if ($editNewsId) {
                   <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                       <div class="d-flex align-items-center gap-2 mb-1">
-                        <?php if ($news['is_pinned']): ?>
+                        <?php if (!empty($news['is_pinned'])): ?>
                           <span class="badge bg-warning text-dark"><i class="bi bi-pin-fill"></i> Pinned</span>
                         <?php endif; ?>
                         <?php if ($news['published_at']): ?>
@@ -287,8 +306,8 @@ if ($editNewsId) {
                       <form method="post" class="d-inline">
                         <input type="hidden" name="action" value="toggle_pin">
                         <input type="hidden" name="news_id" value="<?= $news['id'] ?>">
-                        <button type="submit" class="btn btn-outline-warning" title="<?= $news['is_pinned'] ? 'Unpin' : 'Pin' ?>">
-                          <i class="bi bi-pin<?= $news['is_pinned'] ? '-fill' : '' ?>"></i>
+                        <button type="submit" class="btn btn-outline-warning" title="<?= !empty($news['is_pinned']) ? 'Unpin' : 'Pin' ?>">
+                          <i class="bi bi-pin<?= !empty($news['is_pinned']) ? '-fill' : '' ?>"></i>
                         </button>
                       </form>
                       <?php if ($news['published_at']): ?>
