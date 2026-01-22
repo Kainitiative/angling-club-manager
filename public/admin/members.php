@@ -108,7 +108,7 @@ $stmt = $pdo->prepare("
       WHEN 'suspended' THEN 3 
       WHEN 'expired' THEN 4 
     END,
-    COALESCE(u.is_junior, false) DESC,
+    COALESCE(u.is_junior, 0) DESC,
     cm.created_at DESC
 ");
 $stmt->execute([$clubId]);
