@@ -28,11 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $stmt = $pdo->prepare("
-  SELECT n.*, c.name as club_name, c.slug as club_slug
-  FROM notifications n
-  LEFT JOIN clubs c ON n.club_id = c.id
-  WHERE n.user_id = ?
-  ORDER BY n.is_read ASC, n.created_at DESC
+  SELECT *
+  FROM notifications
+  WHERE user_id = ?
+  ORDER BY is_read ASC, created_at DESC
   LIMIT 100
 ");
 $stmt->execute([$userId]);
@@ -133,9 +132,6 @@ $typeIcons = [
                       <?php endif; ?>
                       <small class="text-muted">
                         <?= date('d M Y, H:i', strtotime($notification['created_at'])) ?>
-                        <?php if ($notification['club_name']): ?>
-                          &bull; <?= htmlspecialchars($notification['club_name']) ?>
-                        <?php endif; ?>
                       </small>
                     </div>
                     <div class="btn-group btn-group-sm ms-2">
