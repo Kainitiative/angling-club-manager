@@ -118,7 +118,40 @@ Key features include a robust user authentication system, comprehensive club man
 - **Note**: Zip file named v25 due to Replit download caching issue
 - **Excluded from zip**: config.local.php, install.php, setup.lock, db/, replit.md
 
-### Production Migration Notes
+### Production Migration Notes (v29)
+Completed January 2026. The following SQL was run to sync production with development:
+
+```sql
+-- Tables created
+CREATE TABLE IF NOT EXISTS club_transactions (...);
+CREATE TABLE IF NOT EXISTS club_accounts (...);
+CREATE TABLE IF NOT EXISTS club_sponsors (...);
+
+-- club_profile_settings columns added (if missing)
+ALTER TABLE club_profile_settings ADD COLUMN hero_image_url VARCHAR(500) NULL;
+ALTER TABLE club_profile_settings ADD COLUMN gallery_enabled TINYINT(1) DEFAULT 1;
+ALTER TABLE club_profile_settings ADD COLUMN sponsors_enabled TINYINT(1) DEFAULT 1;
+ALTER TABLE club_profile_settings ADD COLUMN welcome_message TEXT NULL;
+
+-- club_membership_fees columns added
+ALTER TABLE club_membership_fees ADD COLUMN fee_name VARCHAR(100) NOT NULL DEFAULT 'Membership';
+ALTER TABLE club_membership_fees ADD COLUMN billing_period ENUM('one_time','monthly','quarterly','yearly') DEFAULT 'yearly';
+ALTER TABLE club_membership_fees ADD COLUMN display_order INT DEFAULT 0;
+ALTER TABLE club_membership_fees ADD COLUMN is_active TINYINT(1) DEFAULT 1;
+ALTER TABLE club_membership_fees MODIFY COLUMN name VARCHAR(100) DEFAULT 'Membership';
+
+-- club_gallery column added
+ALTER TABLE club_gallery ADD COLUMN uploaded_by BIGINT UNSIGNED NULL;
+
+-- club_perks fix
+ALTER TABLE club_perks ADD COLUMN perk_text TEXT NULL;
+ALTER TABLE club_perks MODIFY COLUMN title VARCHAR(190) DEFAULT '';
+
+-- Data cleanup
+UPDATE club_membership_fees SET billing_period = 'yearly' 
+WHERE billing_period IS NULL OR billing_period NOT IN ('one_time','monthly','quarterly','yearly');
+```
+
 For existing clubs in production, run this SQL to add owners to club_members:
 ```sql
 INSERT INTO club_members (club_id, user_id, membership_status, committee_role)
