@@ -104,9 +104,12 @@ function recalculateLeaderboard(PDO $pdo, int $leaderboardId): void {
   
   $dateFilter = '';
   $params = [$clubId];
+  $isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
   
   if ($timeScope === 'this_year') {
-    $dateFilter = "AND EXTRACT(YEAR FROM cl.catch_date) = EXTRACT(YEAR FROM CURRENT_DATE)";
+    $dateFilter = $isPostgres 
+      ? "AND EXTRACT(YEAR FROM cl.catch_date) = EXTRACT(YEAR FROM CURRENT_DATE)"
+      : "AND YEAR(cl.catch_date) = YEAR(CURDATE())";
   } elseif ($timeScope === 'custom' && $lb['start_date'] && $lb['end_date']) {
     $dateFilter = "AND cl.catch_date BETWEEN ? AND ?";
     $params[] = $lb['start_date'];

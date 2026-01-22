@@ -134,13 +134,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
 
 $whereClause = "ct.club_id = ?";
 $params = [$clubId];
+$isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
 
 if ($filterMonth && $filterYear) {
-  $whereClause .= " AND EXTRACT(MONTH FROM ct.transaction_date) = ? AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
+  if ($isPostgres) {
+    $whereClause .= " AND EXTRACT(MONTH FROM ct.transaction_date) = ? AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
+  } else {
+    $whereClause .= " AND MONTH(ct.transaction_date) = ? AND YEAR(ct.transaction_date) = ?";
+  }
   $params[] = (int)$filterMonth;
   $params[] = (int)$filterYear;
 } elseif ($filterYear) {
-  $whereClause .= " AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
+  if ($isPostgres) {
+    $whereClause .= " AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
+  } else {
+    $whereClause .= " AND YEAR(ct.transaction_date) = ?";
+  }
   $params[] = (int)$filterYear;
 }
 
@@ -171,7 +180,11 @@ foreach ($entries as $entry) {
 }
 $balance = $totalIncome - $totalExpense;
 
-$stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
+if ($isPostgres) {
+  $stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
+} else {
+  $stmt = $pdo->prepare("SELECT DISTINCT YEAR(transaction_date) as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
+}
 $stmt->execute([$clubId]);
 $availableYears = $stmt->fetchAll(PDO::FETCH_COLUMN);
 if (empty($availableYears)) {
@@ -181,17 +194,31 @@ if (empty($availableYears)) {
 $reportData = [];
 if ($showReport) {
   $reportYear = $filterYear ?: date('Y');
-  $stmt = $pdo->prepare("
-    SELECT 
-      EXTRACT(MONTH FROM transaction_date)::int as month,
-      category,
-      transaction_type as entry_type,
-      SUM(amount) as total
-    FROM club_transactions
-    WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
-    GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
-    ORDER BY EXTRACT(MONTH FROM transaction_date)
-  ");
+  if ($isPostgres) {
+    $stmt = $pdo->prepare("
+      SELECT 
+        EXTRACT(MONTH FROM transaction_date)::int as month,
+        category,
+        transaction_type as entry_type,
+        SUM(amount) as total
+      FROM club_transactions
+      WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
+      GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
+      ORDER BY EXTRACT(MONTH FROM transaction_date)
+    ");
+  } else {
+    $stmt = $pdo->prepare("
+      SELECT 
+        MONTH(transaction_date) as month,
+        category,
+        transaction_type as entry_type,
+        SUM(amount) as total
+      FROM club_transactions
+      WHERE club_id = ? AND YEAR(transaction_date) = ?
+      GROUP BY MONTH(transaction_date), category, transaction_type
+      ORDER BY MONTH(transaction_date)
+    ");
+  }
   $stmt->execute([$clubId, $reportYear]);
   $rawReport = $stmt->fetchAll(PDO::FETCH_ASSOC);
   

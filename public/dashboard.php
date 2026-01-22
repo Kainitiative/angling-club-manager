@@ -110,17 +110,19 @@ $fishingStats = [
 ];
 
 try {
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catches WHERE user_id = ?");
+  $catchTable = (defined('DB_DRIVER') && DB_DRIVER === 'pgsql') ? 'catches' : 'catch_logs';
+  
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM $catchTable WHERE user_id = ?");
   $stmt->execute([$userId]);
   $fishingStats['total_catches'] = (int)$stmt->fetchColumn();
   
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catches WHERE user_id = ? AND is_personal_best = true");
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM $catchTable WHERE user_id = ? AND is_personal_best = 1");
   $stmt->execute([$userId]);
   $fishingStats['personal_bests'] = (int)$stmt->fetchColumn();
   
   $stmt = $pdo->prepare("
     SELECT c.weight_kg, fs.name as species
-    FROM catches c
+    FROM $catchTable c
     LEFT JOIN fish_species fs ON c.species_id = fs.id
     WHERE c.user_id = ? AND c.weight_kg IS NOT NULL 
     ORDER BY c.weight_kg DESC LIMIT 1
@@ -134,7 +136,7 @@ try {
   
   $stmt = $pdo->prepare("
     SELECT ca.*, cl.name as club_name, cl.slug as club_slug, fs.name as species
-    FROM catches ca
+    FROM $catchTable ca
     JOIN clubs cl ON ca.club_id = cl.id
     LEFT JOIN fish_species fs ON ca.species_id = fs.id
     WHERE ca.user_id = ?
