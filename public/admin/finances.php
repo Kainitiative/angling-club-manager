@@ -33,7 +33,7 @@ $isAdmin = (bool)$adminRow;
 $stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
 $stmt->execute([$clubId, $userId]);
 $memberRow = $stmt->fetch();
-$committeeRole = $memberRow['committee_role'] ?? 'member';
+$committeeRole = $memberRow ? ($memberRow['committee_role'] ?? 'member') : 'member';
 
 $committeeRolesAllowedToView = ['chairperson', 'secretary', 'treasurer', 'pro', 'safety_officer', 'child_liaison_officer'];
 $canView = $isAdmin || in_array($committeeRole, $committeeRolesAllowedToView);

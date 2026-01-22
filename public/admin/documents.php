@@ -29,7 +29,7 @@ $adminRow = $stmt->fetch();
 $stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
 $stmt->execute([$clubId, $userId]);
 $memberRow = $stmt->fetch();
-$committeeRole = $memberRow['committee_role'] ?? null;
+$committeeRole = $memberRow ? ($memberRow['committee_role'] ?? null) : null;
 
 $canViewDocuments = $adminRow || in_array($committeeRole, ['chairperson', 'secretary', 'treasurer', 'pro', 'cwo', 'competition_secretary', 'committee']);
 
