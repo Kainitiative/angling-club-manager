@@ -39,7 +39,7 @@
             bottom: 0;
             background: 
                 linear-gradient(180deg, rgba(10, 26, 15, 0.3) 0%, rgba(10, 26, 15, 0.95) 100%),
-                url('https://images.unsplash.com/photo-1440964829947-ca3277bd37f8?w=1920&q=80') center/cover;
+                url('assets/images/hero-lake.png') center/cover;
         }
         
         .hero-content {
@@ -537,7 +537,7 @@
                     </ul>
                 </div>
                 <div class="showcase-image">
-                    <img src="https://images.unsplash.com/photo-1523986490752-c28064f26be3?w=800&q=80" alt="Fishing at lake">
+                    <img src="assets/images/catch-showcase.png" alt="Fresh catch">
                 </div>
             </div>
             
