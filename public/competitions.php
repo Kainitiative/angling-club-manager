@@ -6,54 +6,18 @@ require_once __DIR__ . '/../app/bootstrap.php';
 require_login();
 
 $userId = current_user_id();
-$isLoggedIn = true;
-
-$userCountry = '';
-$userTown = '';
-if ($isLoggedIn) {
-  $stmt = $pdo->prepare("SELECT town, country FROM users WHERE id = ?");
-  $stmt->execute([$userId]);
-  $userData = $stmt->fetch();
-  $userCountry = $userData['country'] ?? '';
-  $userTown = $userData['town'] ?? '';
-}
-
-$filterCountry = $_GET['country'] ?? $userCountry;
-$filterTown = $_GET['town'] ?? '';
-
-$stmt = $pdo->query("SELECT DISTINCT country FROM competitions WHERE country IS NOT NULL AND country != '' ORDER BY country");
-$countries = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-$towns = [];
-if ($filterCountry !== '') {
-  $stmt = $pdo->prepare("SELECT DISTINCT town FROM competitions WHERE country = ? AND town IS NOT NULL AND town != '' ORDER BY town");
-  $stmt->execute([$filterCountry]);
-  $towns = $stmt->fetchAll(PDO::FETCH_COLUMN);
-}
 
 $sql = "
   SELECT comp.*, c.name as club_name, c.slug as club_slug
   FROM competitions comp
   JOIN clubs c ON comp.club_id = c.id
-  WHERE comp.visibility = 'open'
-    AND comp.competition_date >= CURDATE()
+  WHERE comp.status = 'upcoming'
+    AND comp.competition_date >= CURRENT_DATE
+  ORDER BY comp.competition_date ASC
+  LIMIT 50
 ";
-$params = [];
 
-if ($filterCountry !== '') {
-  $sql .= " AND comp.country = ?";
-  $params[] = $filterCountry;
-}
-
-if ($filterTown !== '') {
-  $sql .= " AND comp.town = ?";
-  $params[] = $filterTown;
-}
-
-$sql .= " ORDER BY comp.competition_date ASC LIMIT 50";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
+$stmt = $pdo->query($sql);
 $competitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
@@ -63,6 +27,7 @@ $competitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Browse Competitions - Angling Ireland</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     .competition-card { transition: transform 0.2s; }
     .competition-card:hover { transform: translateY(-2px); }
@@ -74,13 +39,8 @@ $competitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <div class="container">
     <a class="navbar-brand" href="/">Angling Ireland</a>
     <div class="ms-auto">
-      <?php if ($isLoggedIn): ?>
-        <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
-        <a class="btn btn-light btn-sm ms-2" href="/public/auth/logout.php">Logout</a>
-      <?php else: ?>
-        <a class="btn btn-outline-light btn-sm" href="/public/auth/login.php">Login</a>
-        <a class="btn btn-light btn-sm ms-2" href="/public/auth/register.php">Sign Up</a>
-      <?php endif; ?>
+      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
+      <a class="btn btn-light btn-sm ms-2" href="/public/auth/logout.php">Logout</a>
     </div>
   </div>
 </nav>
@@ -88,49 +48,17 @@ $competitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="container py-4">
   <div class="row mb-4">
     <div class="col">
-      <h1>Browse Competitions</h1>
-      <p class="text-muted">Find open fishing competitions near you</p>
-    </div>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-body">
-          <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-              <label class="form-label">Country</label>
-              <select name="country" class="form-select" onchange="this.form.submit()">
-                <option value="">All Countries</option>
-                <?php foreach ($countries as $c): ?>
-                  <option value="<?= e($c) ?>" <?= $filterCountry === $c ? 'selected' : '' ?>><?= e($c) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Town/City</label>
-              <select name="town" class="form-select">
-                <option value="">All Towns</option>
-                <?php foreach ($towns as $t): ?>
-                  <option value="<?= e($t) ?>" <?= $filterTown === $t ? 'selected' : '' ?>><?= e($t) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <button type="submit" class="btn btn-primary">Filter</button>
-              <a href="/public/competitions.php" class="btn btn-outline-secondary">Clear</a>
-            </div>
-          </form>
-        </div>
-      </div>
+      <h1><i class="bi bi-trophy me-2"></i>Browse Competitions</h1>
+      <p class="text-muted">Find upcoming fishing competitions</p>
     </div>
   </div>
 
   <?php if (empty($competitions)): ?>
     <div class="card">
       <div class="card-body text-center py-5">
-        <h5 class="text-muted">No competitions found</h5>
-        <p class="text-muted">Try adjusting your filters or check back later.</p>
+        <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+        <h5 class="text-muted">No upcoming competitions</h5>
+        <p class="text-muted">Check back later for new events.</p>
       </div>
     </div>
   <?php else: ?>
@@ -139,44 +67,31 @@ $competitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="col-md-6 col-lg-4 mb-4">
           <div class="card competition-card h-100 shadow-sm">
             <div class="card-body">
-              <h5 class="card-title"><?= e($comp['title']) ?></h5>
-              <h6 class="card-subtitle mb-2 text-muted"><?= e($comp['venue_name']) ?></h6>
+              <h5 class="card-title"><?= e($comp['name']) ?></h5>
               
               <div class="mb-2">
+                <i class="bi bi-calendar-event text-primary me-1"></i>
                 <strong><?= date('l, j F Y', strtotime($comp['competition_date'])) ?></strong>
-                <?php if ($comp['start_time']): ?>
-                  <br><span class="text-muted">Start: <?= date('g:i A', strtotime($comp['start_time'])) ?></span>
-                <?php endif; ?>
               </div>
               
-              <div class="small text-muted mb-2">
-                <?php if ($comp['town']): ?>
-                  <?= e($comp['town']) ?>
-                <?php endif; ?>
-                <?php if ($comp['county']): ?>
-                  , <?= e($comp['county']) ?>
-                <?php endif; ?>
-                <?php if ($comp['country']): ?>
-                  <br><?= e($comp['country']) ?>
-                <?php endif; ?>
-              </div>
+              <?php if (!empty($comp['location'])): ?>
+                <div class="small text-muted mb-2">
+                  <i class="bi bi-geo-alt me-1"></i><?= e($comp['location']) ?>
+                </div>
+              <?php endif; ?>
               
-              <?php if ($comp['description']): ?>
-                <p class="card-text small"><?= e($comp['description']) ?></p>
+              <?php if (!empty($comp['description'])): ?>
+                <p class="card-text small"><?= e(substr($comp['description'], 0, 150)) ?><?= strlen($comp['description']) > 150 ? '...' : '' ?></p>
               <?php endif; ?>
               
               <div class="small text-muted">
+                <i class="bi bi-people me-1"></i>
                 Hosted by <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>"><?= e($comp['club_name']) ?></a>
               </div>
             </div>
             <div class="card-footer bg-white border-top-0">
-              <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                  View on Map
-                </a>
-              <?php endif; ?>
-              <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>" class="btn btn-outline-secondary btn-sm">
-                View Club
+              <a href="/public/club.php?slug=<?= e($comp['club_slug']) ?>" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-eye me-1"></i>View Club
               </a>
             </div>
           </div>
