@@ -2,7 +2,26 @@
 declare(strict_types=1);
 
 ini_set('display_errors', '1');
+ini_set('log_errors', '1');
 error_reporting(E_ALL);
+
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    echo "<div style='background:#fcc;padding:10px;margin:10px;border:2px solid red;'>";
+    echo "<b>PHP Error:</b> $errstr<br>";
+    echo "<b>File:</b> $errfile (line $errline)";
+    echo "</div>";
+    return true;
+});
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        echo "<div style='background:#fcc;padding:10px;margin:10px;border:2px solid red;'>";
+        echo "<b>Fatal Error:</b> " . htmlspecialchars($error['message']) . "<br>";
+        echo "<b>File:</b> " . htmlspecialchars($error['file']) . " (line " . $error['line'] . ")";
+        echo "</div>";
+    }
+});
 
 try {
 
