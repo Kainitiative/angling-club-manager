@@ -15,9 +15,14 @@ try {
     require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
     echo "<p style='color:green'>Layout file loaded OK</p>";
     
-    echo "<p>Step 3: Checking login...</p>";
-    require_login();
-    echo "<p style='color:green'>Login check OK - User ID: " . current_user_id() . "</p>";
+    echo "<p>Step 3: Checking login status...</p>";
+    $userId = current_user_id();
+    if (!$userId) {
+        echo "<p style='color:orange'>Not logged in - please log in first, then return here.</p>";
+        echo "<p><a href='/public/auth/login.php'>Go to Login</a></p>";
+        exit;
+    }
+    echo "<p style='color:green'>Login OK - User ID: $userId</p>";
     
     echo "<p>Step 4: Getting club...</p>";
     $clubId = (int)($_GET['club_id'] ?? 1);
