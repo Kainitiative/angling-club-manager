@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
+require_once __DIR__ . '/../app/layout/member_shell.php';
 
 require_login();
 
@@ -90,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ]);
     $success = true;
 
-    // Reload user
     $stmt = $pdo->prepare("SELECT id, name, email, profile_picture_url, dob, phone, town, city, country, gender FROM users WHERE id = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
@@ -99,166 +99,152 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $defaultAvatar = 'https://ui-avatars.com/api/?name=' . urlencode($user['name']) . '&size=150&background=0D6EFD&color=fff';
 $avatarUrl = $user['profile_picture_url'] ?: $defaultAvatar;
+
+$pageTitle = 'Your Profile';
+$currentPage = 'profile';
+member_shell_start($pdo, ['title' => 'Your Profile', 'page' => 'profile', 'section' => 'Profile']);
 ?>
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Your Profile</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .profile-picture {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid #dee2e6;
-    }
-  </style>
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">Angling Ireland</a>
-    <div class="ms-auto d-flex gap-2">
-      <a class="btn btn-outline-light btn-sm" href="/public/dashboard.php">Dashboard</a>
-      <a class="btn btn-outline-light btn-sm" href="/public/auth/logout.php">Logout</a>
+
+<style>
+  .profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #dee2e6;
+  }
+</style>
+
+<h1 class="mb-4">Your Profile</h1>
+
+<?php if ($success): ?>
+  <div class="alert alert-success">Profile updated successfully!</div>
+<?php endif; ?>
+
+<?php if ($errors): ?>
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      <?php foreach ($errors as $err): ?>
+        <li><?= e($err) ?></li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+<?php endif; ?>
+
+<?php if ($userClub): ?>
+  <div class="card mb-4 border-primary">
+    <div class="card-header bg-primary text-white">
+      <h6 class="mb-0">Your Club Membership</h6>
+    </div>
+    <div class="card-body">
+      <div class="d-flex align-items-center flex-wrap gap-3">
+        <?php if (!empty($userClub['logo_url'])): ?>
+          <img src="<?= e($userClub['logo_url']) ?>" alt="" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+        <?php else: ?>
+          <div class="rounded d-flex align-items-center justify-content-center bg-primary text-white fw-bold" style="width: 50px; height: 50px; font-size: 1.25rem;">
+            <?= strtoupper(substr($userClub['name'], 0, 1)) ?>
+          </div>
+        <?php endif; ?>
+        <div class="flex-grow-1">
+          <h5 class="mb-1">
+            <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="text-decoration-none"><?= e($userClub['name']) ?></a>
+          </h5>
+          <div class="small text-muted">
+            <?php if (isset($userClub['admin_role'])): ?>
+              <span class="badge bg-warning text-dark"><?= ucfirst($userClub['admin_role']) ?></span>
+            <?php elseif ($userClub['membership_status'] === 'active'): ?>
+              <span class="badge bg-success">Member</span>
+            <?php elseif ($userClub['membership_status'] === 'pending'): ?>
+              <span class="badge bg-info">Pending Approval</span>
+            <?php endif; ?>
+            <?php if ($userClub['joined_at']): ?>
+              &bull; Since <?= date('M j, Y', strtotime($userClub['joined_at'])) ?>
+            <?php endif; ?>
+          </div>
+        </div>
+        <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="btn btn-outline-primary btn-sm">View Club</a>
+      </div>
     </div>
   </div>
-</nav>
-
-<div class="container py-4" style="max-width: 720px;">
-  <h1 class="mb-4">Your Profile</h1>
-
-  <?php if ($success): ?>
-    <div class="alert alert-success">Profile updated successfully!</div>
-  <?php endif; ?>
-
-  <?php if ($errors): ?>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <?php foreach ($errors as $err): ?>
-          <li><?= e($err) ?></li>
-        <?php endforeach; ?>
-      </ul>
+<?php else: ?>
+  <div class="card mb-4 bg-light">
+    <div class="card-body text-center py-4">
+      <p class="text-muted mb-2">You're not a member of any club yet.</p>
+      <a href="/public/clubs.php" class="btn btn-primary btn-sm">Browse Clubs</a>
+      <a href="/public/create_club.php" class="btn btn-outline-primary btn-sm">Create a Club</a>
     </div>
-  <?php endif; ?>
+  </div>
+<?php endif; ?>
 
-  <?php if ($userClub): ?>
-    <div class="card mb-4 border-primary">
-      <div class="card-header bg-primary text-white">
-        <h6 class="mb-0">Your Club Membership</h6>
-      </div>
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <?php if (!empty($userClub['logo_url'])): ?>
-            <img src="<?= e($userClub['logo_url']) ?>" alt="" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
-          <?php else: ?>
-            <div class="rounded me-3 d-flex align-items-center justify-content-center bg-primary text-white fw-bold" style="width: 50px; height: 50px; font-size: 1.25rem;">
-              <?= strtoupper(substr($userClub['name'], 0, 1)) ?>
-            </div>
-          <?php endif; ?>
-          <div class="flex-grow-1">
-            <h5 class="mb-1">
-              <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="text-decoration-none"><?= e($userClub['name']) ?></a>
-            </h5>
-            <div class="small text-muted">
-              <?php if (isset($userClub['admin_role'])): ?>
-                <span class="badge bg-warning text-dark"><?= ucfirst($userClub['admin_role']) ?></span>
-              <?php elseif ($userClub['membership_status'] === 'active'): ?>
-                <span class="badge bg-success">Member</span>
-              <?php elseif ($userClub['membership_status'] === 'pending'): ?>
-                <span class="badge bg-info">Pending Approval</span>
-              <?php endif; ?>
-              <?php if ($userClub['joined_at']): ?>
-                &bull; Since <?= date('M j, Y', strtotime($userClub['joined_at'])) ?>
-              <?php endif; ?>
-            </div>
-          </div>
-          <a href="/public/club.php?slug=<?= e($userClub['slug']) ?>" class="btn btn-outline-primary btn-sm">View Club</a>
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      <div class="text-center mb-4">
+        <img src="<?= e($avatarUrl) ?>" alt="Profile Picture" class="profile-picture mb-3">
+        <div>
+          <label class="form-label">Profile Picture URL</label>
+          <input type="url" class="form-control" name="profile_picture_url" value="<?= e($user['profile_picture_url'] ?? '') ?>" placeholder="https://example.com/photo.jpg">
+          <div class="form-text">Enter a URL to your profile picture, or leave blank for default.</div>
         </div>
       </div>
-    </div>
-  <?php else: ?>
-    <div class="card mb-4 bg-light">
-      <div class="card-body text-center py-4">
-        <p class="text-muted mb-2">You're not a member of any club yet.</p>
-        <a href="/public/clubs.php" class="btn btn-primary btn-sm">Browse Clubs</a>
-        <a href="/public/create_club.php" class="btn btn-outline-primary btn-sm">Create a Club</a>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-control" name="name" value="<?= e($user['name']) ?>" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" value="<?= e($user['email']) ?>" disabled>
+          <div class="form-text">Email cannot be changed.</div>
+        </div>
       </div>
-    </div>
-  <?php endif; ?>
 
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        <div class="text-center mb-4">
-          <img src="<?= e($avatarUrl) ?>" alt="Profile Picture" class="profile-picture mb-3">
-          <div>
-            <label class="form-label">Profile Picture URL</label>
-            <input type="url" class="form-control" name="profile_picture_url" value="<?= e($user['profile_picture_url'] ?? '') ?>" placeholder="https://example.com/photo.jpg">
-            <div class="form-text">Enter a URL to your profile picture, or leave blank for default.</div>
-          </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" class="form-control" name="dob" value="<?= e($user['dob'] ?? '') ?>">
         </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Gender</label>
+          <select class="form-select" name="gender">
+            <option value="">-- Select --</option>
+            <option value="male" <?= ($user['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
+            <option value="female" <?= ($user['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
+            <option value="other" <?= ($user['gender'] ?? '') === 'other' ? 'selected' : '' ?>>Other</option>
+            <option value="prefer_not_to_say" <?= ($user['gender'] ?? '') === 'prefer_not_to_say' ? 'selected' : '' ?>>Prefer not to say</option>
+          </select>
+        </div>
+      </div>
 
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Name *</label>
-            <input type="text" class="form-control" name="name" value="<?= e($user['name']) ?>" required>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" value="<?= e($user['email']) ?>" disabled>
-            <div class="form-text">Email cannot be changed.</div>
-          </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-control" name="phone" value="<?= e($user['phone'] ?? '') ?>" placeholder="+353 1234567">
         </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Town</label>
+          <input type="text" class="form-control" name="town" value="<?= e($user['town'] ?? '') ?>" placeholder="e.g. Tallaght">
+        </div>
+      </div>
 
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Date of Birth</label>
-            <input type="date" class="form-control" name="dob" value="<?= e($user['dob'] ?? '') ?>">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Gender</label>
-            <select class="form-select" name="gender">
-              <option value="">-- Select --</option>
-              <option value="male" <?= ($user['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
-              <option value="female" <?= ($user['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
-              <option value="other" <?= ($user['gender'] ?? '') === 'other' ? 'selected' : '' ?>>Other</option>
-              <option value="prefer_not_to_say" <?= ($user['gender'] ?? '') === 'prefer_not_to_say' ? 'selected' : '' ?>>Prefer not to say</option>
-            </select>
-          </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">City</label>
+          <input type="text" class="form-control" name="city" value="<?= e($user['city'] ?? '') ?>" placeholder="e.g. Dublin">
         </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Country</label>
+          <input type="text" class="form-control" name="country" value="<?= e($user['country'] ?? '') ?>" placeholder="e.g. Ireland">
+        </div>
+      </div>
 
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Phone</label>
-            <input type="tel" class="form-control" name="phone" value="<?= e($user['phone'] ?? '') ?>" placeholder="+353 1234567">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Town</label>
-            <input type="text" class="form-control" name="town" value="<?= e($user['town'] ?? '') ?>" placeholder="e.g. Tallaght">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">City</label>
-            <input type="text" class="form-control" name="city" value="<?= e($user['city'] ?? '') ?>" placeholder="e.g. Dublin">
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Country</label>
-            <input type="text" class="form-control" name="country" value="<?= e($user['country'] ?? '') ?>" placeholder="e.g. Ireland">
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <button type="submit" class="btn btn-primary">Save Profile</button>
-          <a href="/public/dashboard.php" class="btn btn-outline-secondary ms-2">Cancel</a>
-        </div>
-      </form>
-    </div>
+      <div class="mt-3 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">Save Profile</button>
+        <a href="/public/dashboard.php" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
   </div>
 </div>
-</body>
-</html>
+
+<?php member_shell_end(); ?>
