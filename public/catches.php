@@ -22,6 +22,79 @@ if (!$club) {
   exit('Club not found');
 }
 
+$isPostgres = defined('DB_DRIVER') && DB_DRIVER === 'pgsql';
+if (!$isPostgres) {
+  try {
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS fish_species (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(120) NOT NULL UNIQUE,
+        scientific_name VARCHAR(190) NULL,
+        category ENUM('coarse', 'game', 'sea', 'other') NOT NULL DEFAULT 'other',
+        specimen_weight_kg DECIMAL(10,3) NULL,
+        display_order INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS catch_logs (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        club_id BIGINT UNSIGNED NULL,
+        species VARCHAR(120) NULL,
+        weight_kg DECIMAL(10,3) NULL,
+        length_cm DECIMAL(10,2) NULL,
+        catch_date DATE NOT NULL,
+        location_description VARCHAR(255) NULL,
+        notes TEXT NULL,
+        photo_url VARCHAR(500) NULL,
+        is_personal_best TINYINT(1) NOT NULL DEFAULT 0,
+        is_club_record TINYINT(1) NOT NULL DEFAULT 0,
+        is_catch_of_month TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_catch_club (club_id),
+        INDEX idx_catch_date (catch_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS personal_bests (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        club_id BIGINT UNSIGNED NOT NULL,
+        user_id BIGINT UNSIGNED NOT NULL,
+        species VARCHAR(120) NOT NULL,
+        weight_kg DECIMAL(10,3) NULL,
+        catch_log_id BIGINT UNSIGNED NULL,
+        achieved_date DATE NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_pb (club_id, user_id, species)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS club_records (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        club_id BIGINT UNSIGNED NOT NULL,
+        species VARCHAR(120) NOT NULL,
+        weight_kg DECIMAL(10,3) NULL,
+        user_id BIGINT UNSIGNED NOT NULL,
+        catch_log_id BIGINT UNSIGNED NULL,
+        achieved_date DATE NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_record (club_id, species)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    $speciesCheck = $pdo->query("SELECT COUNT(*) FROM fish_species")->fetchColumn();
+    if ($speciesCheck == 0) {
+      $pdo->exec("INSERT INTO fish_species (name, category, display_order) VALUES 
+        ('Pike', 'coarse', 1), ('Perch', 'coarse', 2), ('Bream', 'coarse', 3), ('Roach', 'coarse', 4), ('Rudd', 'coarse', 5),
+        ('Tench', 'coarse', 6), ('Carp', 'coarse', 7), ('Eel', 'coarse', 8), ('Brown Trout', 'game', 10), ('Sea Trout', 'game', 11),
+        ('Salmon', 'game', 12), ('Rainbow Trout', 'game', 13), ('Bass', 'sea', 20), ('Cod', 'sea', 21), ('Pollock', 'sea', 22),
+        ('Mackerel', 'sea', 23), ('Ray', 'sea', 24), ('Tope', 'sea', 25), ('Other', 'other', 99)
+      ");
+    }
+  } catch (PDOException $e) {
+  }
+}
+
 $userId = current_user_id();
 $isLoggedIn = (bool)$userId;
 $isMember = false;

@@ -338,6 +338,7 @@ CREATE TABLE IF NOT EXISTS fish_species (
   scientific_name VARCHAR(190) NULL,
   category ENUM('coarse', 'game', 'sea', 'other') NOT NULL DEFAULT 'other',
   specimen_weight_kg DECIMAL(10,3) NULL,
+  display_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -353,7 +354,7 @@ CREATE TABLE IF NOT EXISTS catch_logs (
   weight_kg DECIMAL(10,3) NULL,
   length_cm DECIMAL(10,2) NULL,
   catch_date DATE NOT NULL,
-  location VARCHAR(255) NULL,
+  location_description VARCHAR(255) NULL,
   method VARCHAR(120) NULL,
   bait VARCHAR(120) NULL,
   weather VARCHAR(120) NULL,
