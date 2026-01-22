@@ -65,8 +65,15 @@ try {
   if (!file_exists($lockFile)) {
     $requiredTables = ['users', 'clubs', 'club_members', 'competitions', 'catch_logs'];
     foreach ($requiredTables as $table) {
-      $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
-      if ($stmt->rowCount() === 0) {
+      if ($driver === 'pgsql') {
+        $stmt = $pdo->prepare("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = ?)");
+        $stmt->execute([$table]);
+        $exists = $stmt->fetchColumn();
+      } else {
+        $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
+        $exists = $stmt->rowCount() > 0;
+      }
+      if (!$exists) {
         header('Location: /install.php');
         exit;
       }
