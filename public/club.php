@@ -235,12 +235,22 @@ $stmt = $pdo->prepare("SELECT * FROM sponsors WHERE club_id = ? ORDER BY display
 $stmt->execute([$club['id']]);
 $clubSponsors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Check if is_pinned column exists in club_news
+$hasPinnedColumn = false;
+try {
+  $checkCol = $pdo->query("SELECT is_pinned FROM club_news LIMIT 1");
+  $hasPinnedColumn = true;
+} catch (PDOException $e) {
+  $hasPinnedColumn = false;
+}
+
+$newsOrderBy = $hasPinnedColumn ? "n.is_pinned DESC, n.published_at DESC" : "n.published_at DESC";
 $stmt = $pdo->prepare("
   SELECT n.*, u.name as author_name 
   FROM club_news n 
   JOIN users u ON n.author_id = u.id 
   WHERE n.club_id = ? AND n.published_at IS NOT NULL
-  ORDER BY n.is_pinned DESC, n.published_at DESC
+  ORDER BY $newsOrderBy
   LIMIT 10
 ");
 $stmt->execute([$club['id']]);
@@ -532,7 +542,7 @@ $billingPeriodLabels = [
               <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
-                    <?php if ($news['is_pinned']): ?>
+                    <?php if (!empty($news['is_pinned'])): ?>
                       <span class="badge bg-warning text-dark me-1">Pinned</span>
                     <?php endif; ?>
                     <h6 class="mb-1"><?= e($news['title']) ?></h6>
