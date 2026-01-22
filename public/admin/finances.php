@@ -116,45 +116,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
       $messageType = 'danger';
     } else {
       $stmt = $pdo->prepare("
-        INSERT INTO club_finances (club_id, entry_type, title, amount, entry_date, category, notes, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO club_transactions (club_id, transaction_type, description, amount, transaction_date, category, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       ");
-      $stmt->execute([$clubId, $entryType, $title, $amount, $entryDate, $category, $notes ?: null, $userId]);
+      $stmt->execute([$clubId, $entryType, $title, $amount, $entryDate, $category, $userId]);
       $message = ucfirst($entryType) . ' entry added successfully.';
       $messageType = 'success';
     }
   } elseif ($action === 'delete') {
     $entryId = (int)($_POST['entry_id'] ?? 0);
-    $stmt = $pdo->prepare("DELETE FROM club_finances WHERE id = ? AND club_id = ?");
+    $stmt = $pdo->prepare("DELETE FROM club_transactions WHERE id = ? AND club_id = ?");
     $stmt->execute([$entryId, $clubId]);
     $message = 'Entry deleted.';
     $messageType = 'info';
   }
 }
 
-$whereClause = "cf.club_id = ?";
+$whereClause = "ct.club_id = ?";
 $params = [$clubId];
 
 if ($filterMonth && $filterYear) {
-  $whereClause .= " AND MONTH(cf.entry_date) = ? AND YEAR(cf.entry_date) = ?";
+  $whereClause .= " AND EXTRACT(MONTH FROM ct.transaction_date) = ? AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
   $params[] = (int)$filterMonth;
   $params[] = (int)$filterYear;
 } elseif ($filterYear) {
-  $whereClause .= " AND YEAR(cf.entry_date) = ?";
+  $whereClause .= " AND EXTRACT(YEAR FROM ct.transaction_date) = ?";
   $params[] = (int)$filterYear;
 }
 
 if ($filterCategory) {
-  $whereClause .= " AND cf.category = ?";
+  $whereClause .= " AND ct.category = ?";
   $params[] = $filterCategory;
 }
 
 $stmt = $pdo->prepare("
-  SELECT cf.*, u.name as created_by_name
-  FROM club_finances cf
-  JOIN users u ON cf.created_by = u.id
+  SELECT ct.*, ct.transaction_date as entry_date, ct.transaction_type as entry_type,
+         u.name as created_by_name
+  FROM club_transactions ct
+  LEFT JOIN users u ON ct.created_by = u.id
   WHERE $whereClause
-  ORDER BY cf.entry_date DESC, cf.created_at DESC
+  ORDER BY ct.transaction_date DESC, ct.created_at DESC
 ");
 $stmt->execute($params);
 $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -170,7 +171,7 @@ foreach ($entries as $entry) {
 }
 $balance = $totalIncome - $totalExpense;
 
-$stmt = $pdo->prepare("SELECT DISTINCT YEAR(entry_date) as year FROM club_finances WHERE club_id = ? ORDER BY year DESC");
+$stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM club_transactions WHERE club_id = ? ORDER BY year DESC");
 $stmt->execute([$clubId]);
 $availableYears = $stmt->fetchAll(PDO::FETCH_COLUMN);
 if (empty($availableYears)) {
@@ -182,14 +183,14 @@ if ($showReport) {
   $reportYear = $filterYear ?: date('Y');
   $stmt = $pdo->prepare("
     SELECT 
-      MONTH(entry_date) as month,
+      EXTRACT(MONTH FROM transaction_date)::int as month,
       category,
-      entry_type,
+      transaction_type as entry_type,
       SUM(amount) as total
-    FROM club_finances
-    WHERE club_id = ? AND YEAR(entry_date) = ?
-    GROUP BY MONTH(entry_date), category, entry_type
-    ORDER BY MONTH(entry_date)
+    FROM club_transactions
+    WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
+    GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
+    ORDER BY EXTRACT(MONTH FROM transaction_date)
   ");
   $stmt->execute([$clubId, $reportYear]);
   $rawReport = $stmt->fetchAll(PDO::FETCH_ASSOC);

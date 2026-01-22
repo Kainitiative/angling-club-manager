@@ -96,10 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
 
 $stmt = $pdo->prepare("
   SELECT cm.*, u.id as user_id, u.name, u.email, u.profile_picture_url, u.phone, u.town, u.city, u.country,
-         p.name as parent_name, u.is_junior
+         u.is_junior, p.name as parent_name
   FROM club_members cm
   JOIN users u ON cm.user_id = u.id
-  LEFT JOIN users p ON cm.parent_user_id = p.id
+  LEFT JOIN users p ON u.parent_id = p.id
   WHERE cm.club_id = ?
   ORDER BY 
     CASE cm.membership_status 
@@ -108,7 +108,7 @@ $stmt = $pdo->prepare("
       WHEN 'suspended' THEN 3 
       WHEN 'expired' THEN 4 
     END,
-    u.is_junior DESC,
+    COALESCE(u.is_junior, false) DESC,
     cm.created_at DESC
 ");
 $stmt->execute([$clubId]);
