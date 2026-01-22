@@ -37,52 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
   
   if ($action === 'create') {
-    $title = trim($_POST['title'] ?? '');
-    $venueName = trim($_POST['venue_name'] ?? '');
+    $name = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $competitionDate = trim($_POST['competition_date'] ?? '');
-    $startTime = trim($_POST['start_time'] ?? '');
-    $addressLine1 = trim($_POST['address_line1'] ?? '');
-    $addressLine2 = trim($_POST['address_line2'] ?? '');
-    $town = trim($_POST['town'] ?? '');
-    $county = trim($_POST['county'] ?? '');
-    $postcode = trim($_POST['postcode'] ?? '');
-    $country = trim($_POST['country'] ?? 'United Kingdom');
-    $latitude = trim($_POST['latitude'] ?? '');
-    $longitude = trim($_POST['longitude'] ?? '');
-    $visibility = $_POST['visibility'] ?? 'open';
+    $location = trim($_POST['location'] ?? '');
     
     $errors = [];
-    if ($title === '') $errors[] = 'Title is required.';
-    if ($venueName === '') $errors[] = 'Venue name is required.';
+    if ($name === '') $errors[] = 'Name is required.';
     if ($competitionDate === '') $errors[] = 'Competition date is required.';
-    if ($country === '') $errors[] = 'Country is required.';
     
     if (empty($errors)) {
       $stmt = $pdo->prepare("
-        INSERT INTO competitions (
-          club_id, title, venue_name, description, competition_date, start_time,
-          address_line1, address_line2, town, county, postcode, country,
-          latitude, longitude, visibility, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO competitions (club_id, name, description, competition_date, location, status)
+        VALUES (?, ?, ?, ?, ?, 'upcoming')
       ");
       $stmt->execute([
         $clubId,
-        $title,
-        $venueName,
+        $name,
         $description ?: null,
         $competitionDate,
-        $startTime ?: null,
-        $addressLine1 ?: null,
-        $addressLine2 ?: null,
-        $town ?: null,
-        $county ?: null,
-        $postcode ?: null,
-        $country,
-        $latitude !== '' ? (float)$latitude : null,
-        $longitude !== '' ? (float)$longitude : null,
-        $visibility,
-        $userId
+        $location ?: null
       ]);
       $message = 'Competition created successfully.';
       $messageType = 'success';
@@ -231,64 +205,25 @@ foreach ($competitions as $c) {
         <div class="card-body">
           <form method="post" id="competitionForm">
             <input type="hidden" name="action" value="create">
-            <input type="hidden" name="latitude" id="latitude">
-            <input type="hidden" name="longitude" id="longitude">
-            <input type="hidden" name="address_line1" id="address_line1">
-            <input type="hidden" name="address_line2" id="address_line2">
-            <input type="hidden" name="town" id="town">
-            <input type="hidden" name="county" id="county">
-            <input type="hidden" name="postcode" id="postcode">
-            <input type="hidden" name="country" id="country" value="United Kingdom">
             
             <div class="mb-3">
-              <label class="form-label">Title <span class="text-danger">*</span></label>
-              <input type="text" name="title" class="form-control" required>
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" required>
             </div>
             
             <div class="mb-3">
-              <label class="form-label">Venue Name <span class="text-danger">*</span></label>
-              <input type="text" name="venue_name" class="form-control" required>
+              <label class="form-label">Date <span class="text-danger">*</span></label>
+              <input type="date" name="competition_date" class="form-control" required>
             </div>
             
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Date <span class="text-danger">*</span></label>
-                <input type="date" name="competition_date" class="form-control" required>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Start Time</label>
-                <input type="time" name="start_time" class="form-control">
-              </div>
+            <div class="mb-3">
+              <label class="form-label">Location</label>
+              <input type="text" name="location" class="form-control" placeholder="e.g., River Shannon, Limerick">
             </div>
             
             <div class="mb-3">
               <label class="form-label">Description</label>
-              <textarea name="description" class="form-control" rows="2"></textarea>
-            </div>
-            
-            <hr>
-            <h6>Location</h6>
-            
-            <div class="mb-3">
-              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#mapModal">
-                Select Location on Map
-              </button>
-            </div>
-            
-            <div id="locationPreview" class="location-preview mb-3" style="display: none;">
-              <strong>Selected Location:</strong>
-              <div id="previewAddress" class="small text-muted mt-1"></div>
-              <div id="previewCoords" class="small text-muted"></div>
-            </div>
-            
-            <hr>
-            
-            <div class="mb-3">
-              <label class="form-label">Visibility</label>
-              <select name="visibility" class="form-select">
-                <option value="open">Open - Anyone can see</option>
-                <option value="private">Private - Club members only</option>
-              </select>
+              <textarea name="description" class="form-control" rows="3"></textarea>
             </div>
             
             <button type="submit" class="btn btn-primary w-100">Create Competition</button>
@@ -309,48 +244,32 @@ foreach ($competitions as $c) {
         <?php foreach ($competitions as $comp): ?>
           <?php
             $isPast = $comp['competition_date'] < $today;
-            $isPrivate = $comp['visibility'] === 'private';
             $cardClass = 'competition-card';
             if ($isPast) $cardClass .= ' past';
-            if ($isPrivate) $cardClass .= ' private';
           ?>
           <div class="card <?= $cardClass ?> mb-3">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <h5 class="mb-1">
-                    <?= e($comp['title']) ?>
-                    <?php if ($isPrivate): ?>
-                      <span class="badge bg-secondary">Private</span>
-                    <?php endif; ?>
+                    <?= e($comp['name']) ?>
                     <?php if ($isPast): ?>
                       <span class="badge bg-light text-dark">Past</span>
                     <?php endif; ?>
+                    <span class="badge bg-<?= $comp['status'] === 'upcoming' ? 'primary' : ($comp['status'] === 'completed' ? 'success' : 'secondary') ?>">
+                      <?= ucfirst($comp['status']) ?>
+                    </span>
                   </h5>
+                  <?php if (!empty($comp['location'])): ?>
                   <div class="text-muted mb-2">
-                    <strong><?= e($comp['venue_name']) ?></strong>
-                    <?php if ($comp['town']): ?>
-                      &bull; <?= e($comp['town']) ?>
-                    <?php endif; ?>
-                    <?php if ($comp['country']): ?>
-                      , <?= e($comp['country']) ?>
-                    <?php endif; ?>
+                    <i class="bi bi-geo-alt me-1"></i><?= e($comp['location']) ?>
                   </div>
+                  <?php endif; ?>
                   <div class="small">
                     <strong>Date:</strong> <?= date('l, j F Y', strtotime($comp['competition_date'])) ?>
-                    <?php if ($comp['start_time']): ?>
-                      at <?= date('g:i A', strtotime($comp['start_time'])) ?>
-                    <?php endif; ?>
                   </div>
-                  <?php if ($comp['description']): ?>
+                  <?php if (!empty($comp['description'])): ?>
                     <div class="small text-muted mt-2"><?= e($comp['description']) ?></div>
-                  <?php endif; ?>
-                  <?php if ($comp['latitude'] && $comp['longitude']): ?>
-                    <div class="small mt-2">
-                      <a href="https://www.google.com/maps?q=<?= $comp['latitude'] ?>,<?= $comp['longitude'] ?>" target="_blank" class="text-decoration-none">
-                        View on Google Maps
-                      </a>
-                    </div>
                   <?php endif; ?>
                   
                   <?php $sponsors = $competitionSponsors[$comp['id']] ?? []; ?>

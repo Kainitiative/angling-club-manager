@@ -67,67 +67,38 @@ foreach ($adminClubs as $club) {
   $totalPending += (int)($club['pending_count'] ?? 0);
 }
 
-$userCountry = $user['country'] ?? '';
-$userTown = $user['town'] ?? '';
 $upcomingCompetitions = [];
 
-if ($userCountry !== '') {
-  if ($userTown !== '') {
-    $stmt = $pdo->prepare("
-      SELECT comp.*, c.name as club_name, c.slug as club_slug, 1 as is_local
-      FROM competitions comp
-      JOIN clubs c ON comp.club_id = c.id
-      WHERE comp.visibility = 'open'
-        AND comp.competition_date >= CURRENT_DATE
-        AND comp.country = ?
-        AND comp.town = ?
-      ORDER BY comp.competition_date ASC
-      LIMIT 5
-    ");
-    $stmt->execute([$userCountry, $userTown]);
-    $upcomingCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-  }
-  
-  $existingIds = array_column($upcomingCompetitions, 'id');
-  $stmt = $pdo->prepare("
-    SELECT comp.*, c.name as club_name, c.slug as club_slug, 0 as is_local
-    FROM competitions comp
-    JOIN clubs c ON comp.club_id = c.id
-    WHERE comp.visibility = 'open'
-      AND comp.competition_date >= CURRENT_DATE
-      AND comp.country = ?
-    ORDER BY comp.competition_date ASC
-    LIMIT 10
-  ");
-  $stmt->execute([$userCountry]);
-  $countryComps = $stmt->fetchAll(PDO::FETCH_ASSOC);
-  
-  foreach ($countryComps as $comp) {
-    if (!in_array($comp['id'], $existingIds) && count($upcomingCompetitions) < 6) {
-      $upcomingCompetitions[] = $comp;
-    }
-  }
-}
+$stmt = $pdo->prepare("
+  SELECT comp.*, c.name as club_name, c.slug as club_slug
+  FROM competitions comp
+  JOIN clubs c ON comp.club_id = c.id
+  WHERE comp.status = 'upcoming'
+    AND comp.competition_date >= CURRENT_DATE
+  ORDER BY comp.competition_date ASC
+  LIMIT 6
+");
+$stmt->execute();
+$upcomingCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $memberClubIds = array_column($memberClubs, 'id');
 $adminClubIds = array_column($adminClubs, 'id');
 $allUserClubIds = array_unique(array_merge($memberClubIds, $adminClubIds));
 
-$privateCompetitions = [];
+$clubCompetitions = [];
 if (!empty($allUserClubIds)) {
   $placeholders = implode(',', array_fill(0, count($allUserClubIds), '?'));
   $stmt = $pdo->prepare("
     SELECT comp.*, c.name as club_name, c.slug as club_slug
     FROM competitions comp
     JOIN clubs c ON comp.club_id = c.id
-    WHERE comp.visibility = 'private'
-      AND comp.competition_date >= CURRENT_DATE
+    WHERE comp.competition_date >= CURRENT_DATE
       AND comp.club_id IN ($placeholders)
     ORDER BY comp.competition_date ASC
     LIMIT 5
   ");
   $stmt->execute($allUserClubIds);
-  $privateCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $clubCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $fishingStats = [
@@ -138,33 +109,42 @@ $fishingStats = [
   'recent_catches' => []
 ];
 
-if (!empty($allUserClubIds)) {
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catch_logs WHERE user_id = ?");
+try {
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catches WHERE user_id = ?");
   $stmt->execute([$userId]);
   $fishingStats['total_catches'] = (int)$stmt->fetchColumn();
   
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catch_logs WHERE user_id = ? AND is_personal_best = 1");
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM catches WHERE user_id = ? AND is_personal_best = true");
   $stmt->execute([$userId]);
   $fishingStats['personal_bests'] = (int)$stmt->fetchColumn();
   
-  $stmt = $pdo->prepare("SELECT species, weight_kg FROM catch_logs WHERE user_id = ? AND weight_kg IS NOT NULL ORDER BY weight_kg DESC LIMIT 1");
+  $stmt = $pdo->prepare("
+    SELECT c.weight_kg, fs.name as species
+    FROM catches c
+    LEFT JOIN fish_species fs ON c.species_id = fs.id
+    WHERE c.user_id = ? AND c.weight_kg IS NOT NULL 
+    ORDER BY c.weight_kg DESC LIMIT 1
+  ");
   $stmt->execute([$userId]);
   $biggest = $stmt->fetch();
   if ($biggest) {
     $fishingStats['biggest_catch_kg'] = (float)$biggest['weight_kg'];
-    $fishingStats['biggest_species'] = $biggest['species'];
+    $fishingStats['biggest_species'] = $biggest['species'] ?? 'Unknown';
   }
   
   $stmt = $pdo->prepare("
-    SELECT cl.*, c.name as club_name, c.slug as club_slug
-    FROM catch_logs cl
-    JOIN clubs c ON cl.club_id = c.id
-    WHERE cl.user_id = ?
-    ORDER BY cl.catch_date DESC, cl.created_at DESC
+    SELECT ca.*, cl.name as club_name, cl.slug as club_slug, fs.name as species
+    FROM catches ca
+    JOIN clubs cl ON ca.club_id = cl.id
+    LEFT JOIN fish_species fs ON ca.species_id = fs.id
+    WHERE ca.user_id = ?
+    ORDER BY ca.catch_date DESC, ca.created_at DESC
     LIMIT 3
   ");
   $stmt->execute([$userId]);
   $fishingStats['recent_catches'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+  // Tables may not exist yet
 }
 
 require_once __DIR__ . '/../app/meetings.php';

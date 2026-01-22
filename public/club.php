@@ -142,45 +142,23 @@ $address = array_filter([
 
 // Fetch upcoming competitions for this club
 // Open competitions are visible to everyone; private only to members/admins
-$canSeePrivate = $isAdmin || $isMember;
-if ($canSeePrivate) {
-  $stmt = $pdo->prepare("
-    SELECT * FROM competitions 
-    WHERE club_id = ? AND competition_date >= CURRENT_DATE
-    ORDER BY competition_date ASC
-    LIMIT 10
-  ");
-} else {
-  $stmt = $pdo->prepare("
-    SELECT * FROM competitions 
-    WHERE club_id = ? AND competition_date >= CURRENT_DATE AND visibility = 'open'
-    ORDER BY competition_date ASC
-    LIMIT 10
-  ");
-}
+$stmt = $pdo->prepare("
+  SELECT * FROM competitions 
+  WHERE club_id = ? AND competition_date >= CURRENT_DATE
+  ORDER BY competition_date ASC
+  LIMIT 10
+");
 $stmt->execute([$club['id']]);
 $clubCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch past competitions with results
-if ($canSeePrivate) {
-  $stmt = $pdo->prepare("
-    SELECT c.*, 
-           (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
-    FROM competitions c
-    WHERE c.club_id = ? AND c.competition_date < CURRENT_DATE
-    ORDER BY c.competition_date DESC
-    LIMIT 10
-  ");
-} else {
-  $stmt = $pdo->prepare("
-    SELECT c.*, 
-           (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
-    FROM competitions c
-    WHERE c.club_id = ? AND c.competition_date < CURRENT_DATE AND c.visibility = 'open'
-    ORDER BY c.competition_date DESC
-    LIMIT 10
-  ");
-}
+$stmt = $pdo->prepare("
+  SELECT c.*, 
+         (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
+  FROM competitions c
+  WHERE c.club_id = ? AND c.competition_date < CURRENT_DATE
+  ORDER BY c.competition_date DESC
+  LIMIT 10
+");
 $stmt->execute([$club['id']]);
 $pastCompetitions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

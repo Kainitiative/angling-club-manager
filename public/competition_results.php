@@ -42,10 +42,6 @@ if ($userId) {
   $isMember = $memberRow && $memberRow['membership_status'] === 'active';
 }
 
-if ($competition['visibility'] === 'private' && !$isAdmin && !$isMember) {
-  http_response_code(403);
-  exit('This competition is private. Only club members can view results.');
-}
 
 $stmt = $pdo->prepare("
   SELECT * FROM competition_results 
