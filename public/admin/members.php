@@ -38,6 +38,8 @@ $adminRole = $adminRow['admin_role'];
 
 $committeeRoles = [
   'member' => 'Member',
+  'owner' => 'Owner',
+  'admin' => 'Admin',
   'chairperson' => 'Chairperson',
   'secretary' => 'Secretary',
   'treasurer' => 'Treasurer',
@@ -96,12 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
 
 $stmt = $pdo->prepare("
   SELECT cm.*, u.id as user_id, u.name, u.email, u.profile_picture_url, u.phone, u.town, u.city, u.country,
-         u.is_junior, p.name as parent_name
+         u.is_junior, p.name as parent_name, ca.admin_role as is_admin
   FROM club_members cm
   JOIN users u ON cm.user_id = u.id
   LEFT JOIN users p ON u.parent_id = p.id
+  LEFT JOIN club_admins ca ON cm.club_id = ca.club_id AND cm.user_id = ca.user_id
   WHERE cm.club_id = ?
   ORDER BY 
+    ca.admin_role IS NOT NULL DESC,
     CASE cm.membership_status 
       WHEN 'pending' THEN 1 
       WHEN 'active' THEN 2 
@@ -122,6 +126,8 @@ foreach ($members as $m) {
 }
 
 $roleBadgeColors = [
+  'owner' => 'bg-dark',
+  'admin' => 'bg-primary',
   'chairperson' => 'bg-primary',
   'secretary' => 'bg-info',
   'treasurer' => 'bg-success',
@@ -269,7 +275,11 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
           $avatar = $member['profile_picture_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($member['name']) . '&size=60&background=6c757d&color=fff';
           $location = array_filter([$member['town'], $member['city'], $member['country']]);
           $statusClass = $member['membership_status'];
+          $isClubAdmin = !empty($member['is_admin']);
           $currentRole = $member['committee_role'] ?? 'member';
+          if ($isClubAdmin) {
+            $currentRole = $member['is_admin'];
+          }
           $roleBadgeColor = $roleBadgeColors[$currentRole] ?? 'bg-light text-dark';
         ?>
         <div class="card member-card <?= $statusClass ?> mb-3">
@@ -314,18 +324,21 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                 </div>
               </div>
               <div class="col-auto">
-                <?php if ($member['membership_status'] === 'active'): ?>
+                <?php if ($member['membership_status'] === 'active' && !$isClubAdmin): ?>
                   <form method="post" class="d-flex align-items-center gap-2 mb-2">
                     <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
                     <input type="hidden" name="action" value="set_role">
                     <select name="committee_role" class="form-select form-select-sm role-select">
                       <?php foreach ($committeeRoles as $roleKey => $roleLabel): ?>
-                        <option value="<?= $roleKey ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= $roleLabel ?></option>
+                        <?php if (!in_array($roleKey, ['owner', 'admin'])): ?>
+                          <option value="<?= $roleKey ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= $roleLabel ?></option>
+                        <?php endif; ?>
                       <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn btn-outline-primary btn-sm">Set Role</button>
                   </form>
                 <?php endif; ?>
+                <?php if (!$isClubAdmin): ?>
                 <div class="d-flex gap-1">
                   <?php if ($member['membership_status'] === 'active'): ?>
                     <form method="post" class="d-inline">
@@ -346,6 +359,7 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                     <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
                   </form>
                 </div>
+                <?php endif; ?>
               </div>
             </div>
           </div>

@@ -160,6 +160,12 @@ $formData = [
       ");
       $stmt->execute([$newClubId, $userId]);
 
+      $stmt = $pdo->prepare("
+        INSERT INTO club_members (club_id, user_id, membership_status, committee_role)
+        VALUES (?, ?, 'active', 'owner')
+      ");
+      $stmt->execute([$newClubId, $userId]);
+
       $pdo->commit();
       $success = true;
 
