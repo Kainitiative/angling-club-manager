@@ -204,44 +204,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($isMember || $isAdmin)) {
       $catchId = (int)$pdo->lastInsertId();
       
       if ($weightKg) {
-        $stmt = $pdo->prepare("SELECT * FROM personal_bests WHERE club_id = ? AND user_id = ? AND species = ?");
-        $stmt->execute([$club['id'], $userId, $species]);
-        $pb = $stmt->fetch();
-        
-        if (!$pb || $weightKg > (float)$pb['weight_kg']) {
-          if ($pb) {
-            $stmt = $pdo->prepare("UPDATE personal_bests SET weight_kg = ?, catch_log_id = ?, achieved_date = ? WHERE club_id = ? AND user_id = ? AND species = ?");
-            $stmt->execute([$weightKg, $catchId, $catchDate, $club['id'], $userId, $species]);
-          } else {
-            $stmt = $pdo->prepare("INSERT INTO personal_bests (club_id, user_id, species, weight_kg, catch_log_id, achieved_date) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$club['id'], $userId, $species, $weightKg, $catchId, $catchDate]);
+        try {
+          $stmt = $pdo->prepare("SELECT * FROM personal_bests WHERE club_id = ? AND user_id = ? AND species = ?");
+          $stmt->execute([$club['id'], $userId, $species]);
+          $pb = $stmt->fetch();
+          
+          if (!$pb || $weightKg > (float)($pb['weight_kg'] ?? 0)) {
+            if ($pb) {
+              $stmt = $pdo->prepare("UPDATE personal_bests SET weight_kg = ?, catch_log_id = ?, achieved_date = ? WHERE club_id = ? AND user_id = ? AND species = ?");
+              $stmt->execute([$weightKg, $catchId, $catchDate, $club['id'], $userId, $species]);
+            } else {
+              $stmt = $pdo->prepare("INSERT INTO personal_bests (club_id, user_id, species, weight_kg, catch_log_id, achieved_date) VALUES (?, ?, ?, ?, ?, ?)");
+              $stmt->execute([$club['id'], $userId, $species, $weightKg, $catchId, $catchDate]);
+            }
+            
+            $stmt = $pdo->prepare("UPDATE catch_logs SET is_personal_best = 1 WHERE id = ?");
+            $stmt->execute([$catchId]);
+            
+            $message = 'Catch logged - New Personal Best!';
+            $messageType = 'success';
           }
-          
-          $stmt = $pdo->prepare("UPDATE catch_logs SET is_personal_best = 1 WHERE id = ?");
-          $stmt->execute([$catchId]);
-          
-          $message = 'Catch logged - New Personal Best!';
-          $messageType = 'success';
+        } catch (PDOException $e) {
         }
         
-        $stmt = $pdo->prepare("SELECT * FROM club_records WHERE club_id = ? AND species = ?");
-        $stmt->execute([$club['id'], $species]);
-        $record = $stmt->fetch();
-        
-        if (!$record || $weightKg > (float)$record['weight_kg']) {
-          if ($record) {
-            $stmt = $pdo->prepare("UPDATE club_records SET weight_kg = ?, user_id = ?, catch_log_id = ?, achieved_date = ? WHERE club_id = ? AND species = ?");
-            $stmt->execute([$weightKg, $userId, $catchId, $catchDate, $club['id'], $species]);
-          } else {
-            $stmt = $pdo->prepare("INSERT INTO club_records (club_id, species, weight_kg, user_id, catch_log_id, achieved_date) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$club['id'], $species, $weightKg, $userId, $catchId, $catchDate]);
-          }
+        try {
+          $stmt = $pdo->prepare("SELECT * FROM club_records WHERE club_id = ? AND species = ?");
+          $stmt->execute([$club['id'], $species]);
+          $record = $stmt->fetch();
+          
+          if (!$record || $weightKg > (float)($record['weight_kg'] ?? 0)) {
+            if ($record) {
+              $stmt = $pdo->prepare("UPDATE club_records SET weight_kg = ?, user_id = ?, catch_log_id = ?, achieved_date = ? WHERE club_id = ? AND species = ?");
+              $stmt->execute([$weightKg, $userId, $catchId, $catchDate, $club['id'], $species]);
+            } else {
+              $stmt = $pdo->prepare("INSERT INTO club_records (club_id, species, weight_kg, user_id, catch_log_id, achieved_date) VALUES (?, ?, ?, ?, ?, ?)");
+              $stmt->execute([$club['id'], $species, $weightKg, $userId, $catchId, $catchDate]);
+            }
           
           $stmt = $pdo->prepare("UPDATE catch_logs SET is_club_record = 1 WHERE id = ?");
           $stmt->execute([$catchId]);
           
           $message = 'Catch logged - New Club Record!';
           $messageType = 'success';
+          }
+        } catch (PDOException $e) {
         }
       }
       
@@ -300,15 +306,20 @@ $stmt = $pdo->prepare("
 $stmt->execute([$club['id']]);
 $catchOfMonth = $stmt->fetch();
 
-$stmt = $pdo->prepare("
-  SELECT cr.*, u.name as angler_name
-  FROM club_records cr
-  JOIN users u ON cr.user_id = u.id
-  WHERE cr.club_id = ?
-  ORDER BY cr.species
-");
-$stmt->execute([$club['id']]);
-$clubRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$clubRecords = [];
+try {
+  $stmt = $pdo->prepare("
+    SELECT cr.*, u.name as angler_name
+    FROM club_records cr
+    JOIN users u ON cr.user_id = u.id
+    WHERE cr.club_id = ?
+    ORDER BY cr.species
+  ");
+  $stmt->execute([$club['id']]);
+  $clubRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+  $clubRecords = [];
+}
 
 $myCatches = [];
 $myPersonalBests = [];
@@ -322,9 +333,13 @@ if ($userId && ($isMember || $isAdmin)) {
   $stmt->execute([$club['id'], $userId]);
   $myCatches = $stmt->fetchAll(PDO::FETCH_ASSOC);
   
-  $stmt = $pdo->prepare("SELECT * FROM personal_bests WHERE club_id = ? AND user_id = ? ORDER BY species");
-  $stmt->execute([$club['id'], $userId]);
-  $myPersonalBests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  try {
+    $stmt = $pdo->prepare("SELECT * FROM personal_bests WHERE club_id = ? AND user_id = ? ORDER BY species");
+    $stmt->execute([$club['id'], $userId]);
+    $myPersonalBests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
+    $myPersonalBests = [];
+  }
 }
 ?>
 <!doctype html>
