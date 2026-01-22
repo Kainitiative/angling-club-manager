@@ -146,14 +146,14 @@ $canSeePrivate = $isAdmin || $isMember;
 if ($canSeePrivate) {
   $stmt = $pdo->prepare("
     SELECT * FROM competitions 
-    WHERE club_id = ? AND competition_date >= CURDATE()
+    WHERE club_id = ? AND competition_date >= CURRENT_DATE
     ORDER BY competition_date ASC
     LIMIT 10
   ");
 } else {
   $stmt = $pdo->prepare("
     SELECT * FROM competitions 
-    WHERE club_id = ? AND competition_date >= CURDATE() AND visibility = 'open'
+    WHERE club_id = ? AND competition_date >= CURRENT_DATE AND visibility = 'open'
     ORDER BY competition_date ASC
     LIMIT 10
   ");
@@ -167,7 +167,7 @@ if ($canSeePrivate) {
     SELECT c.*, 
            (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
     FROM competitions c
-    WHERE c.club_id = ? AND c.competition_date < CURDATE()
+    WHERE c.club_id = ? AND c.competition_date < CURRENT_DATE
     ORDER BY c.competition_date DESC
     LIMIT 10
   ");
@@ -176,7 +176,7 @@ if ($canSeePrivate) {
     SELECT c.*, 
            (SELECT COUNT(*) FROM competition_results cr WHERE cr.competition_id = c.id) as result_count
     FROM competitions c
-    WHERE c.club_id = ? AND c.competition_date < CURDATE() AND c.visibility = 'open'
+    WHERE c.club_id = ? AND c.competition_date < CURRENT_DATE AND c.visibility = 'open'
     ORDER BY c.competition_date DESC
     LIMIT 10
   ");

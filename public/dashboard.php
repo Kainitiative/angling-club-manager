@@ -78,7 +78,7 @@ if ($userCountry !== '') {
       FROM competitions comp
       JOIN clubs c ON comp.club_id = c.id
       WHERE comp.visibility = 'open'
-        AND comp.competition_date >= CURDATE()
+        AND comp.competition_date >= CURRENT_DATE
         AND comp.country = ?
         AND comp.town = ?
       ORDER BY comp.competition_date ASC
@@ -94,7 +94,7 @@ if ($userCountry !== '') {
     FROM competitions comp
     JOIN clubs c ON comp.club_id = c.id
     WHERE comp.visibility = 'open'
-      AND comp.competition_date >= CURDATE()
+      AND comp.competition_date >= CURRENT_DATE
       AND comp.country = ?
     ORDER BY comp.competition_date ASC
     LIMIT 10
@@ -121,7 +121,7 @@ if (!empty($allUserClubIds)) {
     FROM competitions comp
     JOIN clubs c ON comp.club_id = c.id
     WHERE comp.visibility = 'private'
-      AND comp.competition_date >= CURDATE()
+      AND comp.competition_date >= CURRENT_DATE
       AND comp.club_id IN ($placeholders)
     ORDER BY comp.competition_date ASC
     LIMIT 5
