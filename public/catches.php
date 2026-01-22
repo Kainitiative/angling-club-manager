@@ -120,7 +120,15 @@ if (!$isMember && !$isAdmin) {
   exit('Access restricted to club members only.');
 }
 
-$stmt = $pdo->prepare("SELECT * FROM fish_species ORDER BY display_order, name");
+$hasDisplayOrder = false;
+try {
+  $checkCol = $pdo->query("SELECT display_order FROM fish_species LIMIT 1");
+  $hasDisplayOrder = ($checkCol !== false);
+} catch (PDOException $e) {
+  $hasDisplayOrder = false;
+}
+$speciesOrderBy = $hasDisplayOrder ? "display_order, name" : "name";
+$stmt = $pdo->prepare("SELECT * FROM fish_species ORDER BY $speciesOrderBy");
 $stmt->execute();
 $fishSpecies = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
