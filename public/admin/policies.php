@@ -24,23 +24,16 @@ if (!$club) {
   exit('Club not found');
 }
 
-$stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
-$stmt->execute([$clubId, $userId]);
-$adminRow = $stmt->fetch();
+// Use new permission system
+$canView = can_view($pdo, $userId, $clubId, 'policies');
+$canEdit = can_edit($pdo, $userId, $clubId, 'policies');
 
-$stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
-$stmt->execute([$clubId, $userId]);
-$memberRow = $stmt->fetch();
-$committeeRole = $memberRow ? ($memberRow['committee_role'] ?? null) : null;
-
-$canEditPolicies = $adminRow || in_array($committeeRole, ['chairperson', 'secretary', 'pro']);
-
-if (!$canEditPolicies) {
+if (!$canView) {
   http_response_code(403);
-  exit('You do not have permission to edit club policies');
+  exit('You do not have permission to view club policies');
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
   $action = $_POST['action'] ?? '';
   
   if ($action === 'save_policies') {

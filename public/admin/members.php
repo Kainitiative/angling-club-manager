@@ -25,28 +25,24 @@ if (!$club) {
   exit('Club not found');
 }
 
-$stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
-$stmt->execute([$clubId, $userId]);
-$adminRow = $stmt->fetch();
+// Get user's permissions for this club
+$userPerms = get_user_permissions($pdo, $userId, $clubId);
+$userRoles = $userPerms['roles'] ?? [];
 
-if (!$adminRow) {
+// Must be at least a member with view permission, or a committee member
+if (!can_view($pdo, $userId, $clubId, 'members')) {
   http_response_code(403);
-  exit('You are not an admin of this club');
+  exit('You do not have permission to view members');
 }
 
-$adminRole = $adminRow['admin_role'];
+// Check specific permissions for actions
+$canAccept = has_permission($pdo, $userId, $clubId, 'members', 'accept');
+$canReject = has_permission($pdo, $userId, $clubId, 'members', 'reject');
+$canSuspend = has_permission($pdo, $userId, $clubId, 'members', 'suspend');
+$canRemove = has_permission($pdo, $userId, $clubId, 'members', 'remove');
+$canSetRole = has_permission($pdo, $userId, $clubId, 'members', 'set_role');
 
-$committeeRoles = [
-  'member' => 'Member',
-  'owner' => 'Owner',
-  'admin' => 'Admin',
-  'chairperson' => 'Chairperson',
-  'secretary' => 'Secretary',
-  'treasurer' => 'Treasurer',
-  'pro' => 'PRO',
-  'safety_officer' => 'Safety Officer',
-  'child_liaison_officer' => 'Child Liaison Officer',
-];
+$committeeRoles = get_committee_roles();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['member_id'])) {
   $memberId = (int)$_POST['member_id'];
@@ -57,39 +53,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
   $member = $stmt->fetch();
   
   if ($member) {
-    if ($action === 'approve') {
+    // Check if target is an admin (protected)
+    $targetIsAdmin = is_club_admin($pdo, (int)$member['user_id'], $clubId);
+    
+    if ($action === 'approve' && $canAccept) {
       $stmt = $pdo->prepare("UPDATE club_members SET membership_status = 'active', updated_at = NOW() WHERE id = ?");
       $stmt->execute([$memberId]);
       notify_membership_approved($pdo, (int)$member['user_id'], $clubId, $club['name'], $club['slug']);
       $message = "Approved membership for {$member['name']}.";
       $messageType = 'success';
-    } elseif ($action === 'reject') {
+    } elseif ($action === 'reject' && $canReject) {
       notify_membership_rejected($pdo, (int)$member['user_id'], $clubId, $club['name']);
       $stmt = $pdo->prepare("DELETE FROM club_members WHERE id = ?");
       $stmt->execute([$memberId]);
       $message = "Rejected membership request from {$member['name']}.";
       $messageType = 'warning';
-    } elseif ($action === 'suspend') {
+    } elseif ($action === 'suspend' && $canSuspend && !$targetIsAdmin) {
       $stmt = $pdo->prepare("UPDATE club_members SET membership_status = 'suspended', updated_at = NOW() WHERE id = ?");
       $stmt->execute([$memberId]);
       $message = "Suspended membership for {$member['name']}.";
       $messageType = 'warning';
-    } elseif ($action === 'activate') {
+    } elseif ($action === 'activate' && $canSuspend && !$targetIsAdmin) {
       $stmt = $pdo->prepare("UPDATE club_members SET membership_status = 'active', updated_at = NOW() WHERE id = ?");
       $stmt->execute([$memberId]);
       $message = "Reactivated membership for {$member['name']}.";
       $messageType = 'success';
-    } elseif ($action === 'remove') {
+    } elseif ($action === 'remove' && $canRemove && !$targetIsAdmin) {
       $stmt = $pdo->prepare("DELETE FROM club_members WHERE id = ?");
       $stmt->execute([$memberId]);
       $message = "Removed {$member['name']} from the club.";
       $messageType = 'info';
-    } elseif ($action === 'set_role') {
+    } elseif ($action === 'set_role' && $canSetRole) {
       $newRole = $_POST['committee_role'] ?? 'member';
-      if (array_key_exists($newRole, $committeeRoles)) {
+      // Owners/admins can set their own committee role, but not admin roles via this form
+      if (array_key_exists($newRole, $committeeRoles) && !is_admin_role($newRole)) {
         $stmt = $pdo->prepare("UPDATE club_members SET committee_role = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$newRole, $memberId]);
-        $message = "Updated role for {$member['name']} to {$committeeRoles[$newRole]}.";
+        $message = "Updated role for {$member['name']} to " . get_role_display_name($newRole) . ".";
         $messageType = 'success';
       }
     }
@@ -172,6 +172,13 @@ $customStyles = '
     font-size: 0.75rem;
     padding: 4px 8px;
   }
+  .view-only-notice {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 20px;
+  }
 ';
 
 club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Members']);
@@ -179,7 +186,7 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h1 class="mb-1">Manage Members</h1>
+      <h1 class="mb-1">Members</h1>
       <p class="text-muted mb-0"><?= e($club['name']) ?></p>
     </div>
     <div>
@@ -189,6 +196,13 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
       <span class="badge bg-success fs-6"><?= $activeCount ?> Active Members</span>
     </div>
   </div>
+
+  <?php if (!$canAccept && !$canSetRole): ?>
+    <div class="view-only-notice">
+      <i class="bi bi-eye me-2"></i>
+      <strong>View Only</strong> - You can view club members but cannot manage them with your current role.
+    </div>
+  <?php endif; ?>
 
   <?php if ($message): ?>
     <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
@@ -207,7 +221,7 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
     </div>
   <?php else: ?>
     
-    <?php if ($pendingCount > 0): ?>
+    <?php if ($pendingCount > 0 && ($canAccept || $canReject)): ?>
       <h5 class="mb-3">Pending Requests</h5>
       <?php foreach ($members as $member): ?>
         <?php if ($member['membership_status'] === 'pending'): ?>
@@ -247,22 +261,31 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                   </div>
                 </div>
                 <div class="col-auto">
-                  <form method="post" class="d-inline">
-                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="action" value="approve">
-                    <button type="submit" class="btn btn-success">Approve</button>
-                  </form>
-                  <form method="post" class="d-inline">
-                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="action" value="reject">
-                    <button type="submit" class="btn btn-outline-danger">Reject</button>
-                  </form>
+                  <?php if ($canAccept): ?>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                      <input type="hidden" name="action" value="approve">
+                      <button type="submit" class="btn btn-success">Approve</button>
+                    </form>
+                  <?php endif; ?>
+                  <?php if ($canReject): ?>
+                    <form method="post" class="d-inline">
+                      <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                      <input type="hidden" name="action" value="reject">
+                      <button type="submit" class="btn btn-outline-danger">Reject</button>
+                    </form>
+                  <?php endif; ?>
                 </div>
               </div>
             </div>
           </div>
         <?php endif; ?>
       <?php endforeach; ?>
+    <?php elseif ($pendingCount > 0): ?>
+      <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        There are <?= $pendingCount ?> pending membership requests. Contact a club admin to process them.
+      </div>
     <?php endif; ?>
 
     <?php 
@@ -275,12 +298,19 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
           $avatar = $member['profile_picture_url'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($member['name']) . '&size=60&background=6c757d&color=fff';
           $location = array_filter([$member['town'], $member['city'], $member['country']]);
           $statusClass = $member['membership_status'];
-          $isClubAdmin = !empty($member['is_admin']);
+          $isTargetAdmin = !empty($member['is_admin']);
           $currentRole = $member['committee_role'] ?? 'member';
-          if ($isClubAdmin) {
-            $currentRole = $member['is_admin'];
+          $displayRole = $currentRole;
+          
+          // Show admin role badge if they are an admin
+          if ($isTargetAdmin) {
+            $displayRole = $member['is_admin'];
           }
-          $roleBadgeColor = $roleBadgeColors[$currentRole] ?? 'bg-light text-dark';
+          
+          $roleBadgeColor = $roleBadgeColors[$displayRole] ?? 'bg-light text-dark';
+          
+          // Check if this is the current user (for self-role assignment)
+          $isSelf = ($member['user_id'] == $userId);
         ?>
         <div class="card member-card <?= $statusClass ?> mb-3">
           <div class="card-body">
@@ -291,6 +321,9 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
               <div class="col">
                 <h5 class="mb-1">
                   <?= e($member['name']) ?>
+                  <?php if ($isSelf): ?>
+                    <span class="badge bg-secondary">You</span>
+                  <?php endif; ?>
                   <?php if ($member['is_junior']): ?>
                     <span class="badge bg-info">Junior</span>
                   <?php endif; ?>
@@ -301,8 +334,11 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                   <?php elseif ($member['membership_status'] === 'expired'): ?>
                     <span class="badge bg-secondary">Expired</span>
                   <?php endif; ?>
-                  <?php if ($currentRole !== 'member'): ?>
-                    <span class="badge committee-badge <?= $roleBadgeColor ?>"><?= e($committeeRoles[$currentRole]) ?></span>
+                  <?php if ($isTargetAdmin): ?>
+                    <span class="badge committee-badge <?= $roleBadgeColor ?>"><?= e(get_role_display_name($displayRole)) ?></span>
+                  <?php endif; ?>
+                  <?php if ($currentRole !== 'member' && !$isTargetAdmin): ?>
+                    <span class="badge committee-badge <?= $roleBadgeColors[$currentRole] ?? 'bg-light text-dark' ?>"><?= e(get_role_display_name($currentRole)) ?></span>
                   <?php endif; ?>
                 </h5>
                 <?php if ($member['is_junior'] && $member['parent_name']): ?>
@@ -324,40 +360,50 @@ club_admin_shell_start($pdo, $club, ['title' => $pageTitle, 'page' => $currentPa
                 </div>
               </div>
               <div class="col-auto">
-                <?php if ($member['membership_status'] === 'active' && !$isClubAdmin): ?>
+                <?php 
+                // Show role selector if:
+                // 1. User has set_role permission AND target is not an admin (can set other's roles)
+                // 2. OR user is an admin AND this is themselves (admin can assign themselves a committee role)
+                $showRoleSelector = ($member['membership_status'] === 'active') && (
+                  ($canSetRole && !$isTargetAdmin) || 
+                  ($isSelf && $userRoles['is_admin'])
+                );
+                ?>
+                <?php if ($showRoleSelector): ?>
                   <form method="post" class="d-flex align-items-center gap-2 mb-2">
                     <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
                     <input type="hidden" name="action" value="set_role">
                     <select name="committee_role" class="form-select form-select-sm role-select">
                       <?php foreach ($committeeRoles as $roleKey => $roleLabel): ?>
-                        <?php if (!in_array($roleKey, ['owner', 'admin'])): ?>
-                          <option value="<?= $roleKey ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= $roleLabel ?></option>
-                        <?php endif; ?>
+                        <option value="<?= $roleKey ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= $roleLabel ?></option>
                       <?php endforeach; ?>
                     </select>
                     <button type="submit" class="btn btn-outline-primary btn-sm">Set Role</button>
                   </form>
                 <?php endif; ?>
-                <?php if (!$isClubAdmin): ?>
+                
+                <?php if (!$isTargetAdmin && !$isSelf && ($canSuspend || $canRemove)): ?>
                 <div class="d-flex gap-1">
-                  <?php if ($member['membership_status'] === 'active'): ?>
+                  <?php if ($member['membership_status'] === 'active' && $canSuspend): ?>
                     <form method="post" class="d-inline">
                       <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
                       <input type="hidden" name="action" value="suspend">
                       <button type="submit" class="btn btn-outline-warning btn-sm">Suspend</button>
                     </form>
-                  <?php elseif ($member['membership_status'] === 'suspended'): ?>
+                  <?php elseif ($member['membership_status'] === 'suspended' && $canSuspend): ?>
                     <form method="post" class="d-inline">
                       <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
                       <input type="hidden" name="action" value="activate">
                       <button type="submit" class="btn btn-success btn-sm">Reactivate</button>
                     </form>
                   <?php endif; ?>
-                  <form method="post" class="d-inline" onsubmit="return confirm('Remove this member from the club?');">
-                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="action" value="remove">
-                    <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
-                  </form>
+                  <?php if ($canRemove): ?>
+                    <form method="post" class="d-inline" onsubmit="return confirm('Remove this member from the club?');">
+                      <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                      <input type="hidden" name="action" value="remove">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                    </form>
+                  <?php endif; ?>
                 </div>
                 <?php endif; ?>
               </div>

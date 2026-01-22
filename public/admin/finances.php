@@ -41,19 +41,11 @@ if (!$club) {
   exit('Club not found');
 }
 
-$stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
-$stmt->execute([$clubId, $userId]);
-$adminRow = $stmt->fetch();
-$isAdmin = (bool)$adminRow;
-
-$stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
-$stmt->execute([$clubId, $userId]);
-$memberRow = $stmt->fetch();
-$committeeRole = $memberRow ? ($memberRow['committee_role'] ?? 'member') : 'member';
-
-$committeeRolesAllowedToView = ['chairperson', 'secretary', 'treasurer', 'pro', 'safety_officer', 'child_liaison_officer'];
-$canView = $isAdmin || in_array($committeeRole, $committeeRolesAllowedToView);
-$canEdit = $isAdmin || in_array($committeeRole, ['chairperson', 'treasurer']);
+// Use new permission system
+$canView = can_view($pdo, $userId, $clubId, 'finances');
+$canCreate = can_create($pdo, $userId, $clubId, 'finances');
+$canEdit = can_edit($pdo, $userId, $clubId, 'finances');
+$canDelete = can_delete($pdo, $userId, $clubId, 'finances');
 
 if (!$canView) {
   http_response_code(403);

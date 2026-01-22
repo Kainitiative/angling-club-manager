@@ -18,26 +18,16 @@ if (!$club) {
   exit('Club not found');
 }
 
-$stmt = $pdo->prepare("SELECT admin_role FROM club_admins WHERE club_id = ? AND user_id = ?");
-$stmt->execute([$clubId, $userId]);
-$adminRow = $stmt->fetch();
-$isAdmin = (bool)$adminRow;
+// Use new permission system
+$canView = can_view($pdo, $userId, $clubId, 'news');
+$canCreate = can_create($pdo, $userId, $clubId, 'news');
+$canEdit = can_edit($pdo, $userId, $clubId, 'news');
+$canDelete = can_delete($pdo, $userId, $clubId, 'news');
+$canManageNews = $canCreate || $canEdit;
 
-$canManageNews = false;
-if ($isAdmin) {
-  $canManageNews = true;
-} else {
-  $stmt = $pdo->prepare("SELECT committee_role FROM club_members WHERE club_id = ? AND user_id = ? AND membership_status = 'active'");
-  $stmt->execute([$clubId, $userId]);
-  $memberRow = $stmt->fetch();
-  if ($memberRow && in_array($memberRow['committee_role'], ['chairperson', 'secretary'])) {
-    $canManageNews = true;
-  }
-}
-
-if (!$canManageNews) {
+if (!$canView) {
   http_response_code(403);
-  exit('You do not have permission to manage news for this club.');
+  exit('You do not have permission to view news for this club.');
 }
 
 $message = '';

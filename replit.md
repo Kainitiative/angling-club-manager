@@ -25,21 +25,44 @@ Different shells have tailored mobile bottom navigation:
 
 SSL enforcement is managed via Cloudflare.
 
-### Club Roles & Permissions
+### Club Roles & Permissions System
 
-| Role | Type | Permissions |
-|------|------|-------------|
-| **Owner** | Admin | Full control, cannot be removed/suspended, receives join notifications |
-| **Admin** | Admin | Full admin access, cannot be removed/suspended, receives join notifications |
-| **Chairperson** | Committee | Can send announcements to all members |
-| **Secretary** | Committee | Can send announcements, receives join notifications |
-| **Treasurer** | Committee | Standard member access |
-| **PRO** | Committee | Standard member access |
-| **Safety Officer** | Committee | Standard member access |
-| **Child Liaison Officer** | Committee | Standard member access |
-| **Member** | Regular | Standard member access |
+The permission system is implemented in `app/permissions.php` and provides granular access control.
 
-**Note:** Admins are automatically added to club_members table with 'owner' or 'admin' committee_role so they appear in member counts and lists.
+#### Role Types
+- **Admin Roles**: Owner, Admin - stored in `club_admins` table
+- **Committee Roles**: Chairperson, Secretary, Treasurer, PRO, Safety Officer, Child Liaison Officer - stored in `committee_role` column of `club_members`
+- **Regular Role**: Member
+
+#### Dual Role Support
+Owners/Admins can also hold a committee role (e.g., Owner + Chairperson). Admin permissions always take precedence.
+
+#### Detailed Permission Matrix
+
+| Feature | Owner/Admin | Chairperson | Secretary | Treasurer | PRO | Safety Officer | Member |
+|---------|-------------|-------------|-----------|-----------|-----|----------------|--------|
+| **Members** | Full | Full | Accept/Reject only | View | View | View | View |
+| **Meetings** | Full | Full | Full | View | View | View | - |
+| **News** | Full | Full | Full | View | Full | View | - |
+| **Profile** | Full | Full | Full | View | Full | View | - |
+| **Policies** | Full | Full | Full | View | Full | Full | - |
+| **Finances** | Full | Full | View | Full | View | View | - |
+| **Competitions** | Full | Full | View | View | View | View | - |
+| **Catches** | Full | Full | View | View | View | View | - |
+| **Documents** | Full | Full | Full | View | View | View | - |
+
+#### Permission Functions
+- `has_permission($pdo, $userId, $clubId, $feature, $action)` - Check specific permission
+- `can_view()`, `can_edit()`, `can_create()`, `can_delete()` - Shorthand functions
+- `get_user_club_roles()` - Get all roles for a user in a club
+- `get_user_permissions()` - Get all permissions for UI rendering
+- `is_club_admin()`, `is_club_owner()` - Check admin status
+
+#### Member Visibility
+- All club members can view the member list via `/public/club_members.php`
+- Members see name, profile picture, location (town/city), and role
+- Contact details (email, phone) are hidden from regular members
+- Members can message each other through the messaging system
 
 ### Technical Implementations
 The core structure uses `index.php` as the entry point and `app/bootstrap.php` for essential application setup. It features robust production error handling, security measures via `.htaccess` and security headers, and a planned multi-database architecture for isolating identity, PII, and application data. Navigation is centrally managed, and the system supports both MySQL and PostgreSQL with a migration system for schema evolution. User management includes multiple account types and roles, and image processing uses PHP's GD library for optimization. Branding allows for customizable entity profiles, and the system includes internal notifications and messaging features. An automatic database installer simplifies initial setup.
@@ -57,6 +80,14 @@ Located in `app/notifications.php`, provides functions for:
 Key features include a robust user authentication system, comprehensive club management (creation, membership requests, profile customization), and financial tracking. Member engagement is fostered through catch logging, personal bests, club records, 'Catch of the Month', competitions, and personal statistics dashboards. The platform supports sponsors and supporters, includes a governance hub with best practice guides, and provides a document template library for clubs. It also features a committee guide and aims for integration with angling affiliations.
 
 ## Recent Changes (January 2026)
+
+### Role-Based Permission System (v29)
+- Added: Centralized permission system in `app/permissions.php`
+- Added: Granular permissions by role (view, create, edit, delete per feature)
+- Added: Dual role support - owners can also hold committee roles
+- Added: Member-facing club members list at `/public/club_members.php`
+- Updated: Admin pages now use permission checks (members, news, finances, policies)
+- Updated: Committee roles have specific feature access (see permission matrix above)
 
 ### Navigation Overhaul
 - Converted all pages to use consistent shell layouts (member_shell, club_admin_shell, public_shell)
@@ -83,7 +114,7 @@ Key features include a robust user authentication system, comprehensive club man
 - **Production Database**: MySQL 8.2.29 (anglingireland_clubmanager)
 - **Development Database**: PostgreSQL (Replit)
 - **Zip Naming Convention**: Use `anglingirelandv{version}.zip` for releases
-- **Current Version**: v28
+- **Current Version**: v29
 - **Note**: Zip file named v25 due to Replit download caching issue
 - **Excluded from zip**: config.local.php, install.php, setup.lock, db/, replit.md
 
@@ -125,6 +156,7 @@ WHERE NOT EXISTS (
 - [ ] Review LSP diagnostics in admin/members.php and create_club.php
 - [ ] Consider adding database migrations system for production updates
 - [ ] Review and optimize SQL queries for larger clubs
+- [ ] Update remaining admin pages to use permission system (meetings, competitions, catches, documents, governance, sponsors, seasons)
 
 ## External Dependencies
 - **Database Systems**: MySQL/MariaDB (production) and PostgreSQL (development on Replit).
@@ -143,10 +175,12 @@ WHERE NOT EXISTS (
 ## Key Files Reference
 - `index.php` - Public landing page
 - `app/bootstrap.php` - Core application setup
+- `app/permissions.php` - Role-based permission system
 - `app/notifications.php` - Notification system functions
 - `app/layout/member_shell.php` - Member navigation shell
 - `app/layout/club_admin_shell.php` - Club admin navigation shell
 - `app/layout/public_shell.php` - Public (guest) navigation shell
 - `public/club.php` - Individual club page with join functionality
 - `public/clubs.php` - Browse all clubs
-- `public/admin/members.php` - Club member management
+- `public/club_members.php` - Member-facing club members list
+- `public/admin/members.php` - Club member management (admin)
