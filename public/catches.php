@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
+try {
+
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/image_upload.php';
 
@@ -608,3 +613,11 @@ function toggleCustomSpecies(select) {
 </script>
 </body>
 </html>
+<?php
+} catch (Throwable $e) {
+  echo "<pre>Error: " . htmlspecialchars($e->getMessage()) . "\n";
+  echo "File: " . htmlspecialchars($e->getFile()) . "\n";
+  echo "Line: " . $e->getLine() . "\n";
+  echo "Trace:\n" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
+}
+?>
