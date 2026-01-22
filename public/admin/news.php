@@ -45,7 +45,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
   
-  if ($action === 'add_news') {
+  if ($action === 'add_news' && $canCreate) {
     $title = trim($_POST['title'] ?? '');
     $content = trim($_POST['content'] ?? '');
     $isPinned = isset($_POST['is_pinned']) ? 1 : 0;
@@ -73,13 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $message = 'News article added successfully!';
       $messageType = 'success';
     }
-  } elseif ($action === 'delete_news') {
+  } elseif ($action === 'delete_news' && $canDelete) {
     $newsId = (int)($_POST['news_id'] ?? 0);
     $stmt = $pdo->prepare("DELETE FROM club_news WHERE id = ? AND club_id = ?");
     $stmt->execute([$newsId, $clubId]);
     $message = 'News article deleted.';
     $messageType = 'info';
-  } elseif ($action === 'toggle_pin') {
+  } elseif ($action === 'toggle_pin' && $canEdit) {
     $newsId = (int)($_POST['news_id'] ?? 0);
     if ($hasPinnedColumn) {
       $stmt = $pdo->prepare("UPDATE club_news SET is_pinned = NOT is_pinned WHERE id = ? AND club_id = ?");
@@ -90,19 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $message = 'Pin feature not available. Please add the is_pinned column to your database.';
       $messageType = 'warning';
     }
-  } elseif ($action === 'publish') {
+  } elseif ($action === 'publish' && $canEdit) {
     $newsId = (int)($_POST['news_id'] ?? 0);
     $stmt = $pdo->prepare("UPDATE club_news SET published_at = NOW() WHERE id = ? AND club_id = ? AND published_at IS NULL");
     $stmt->execute([$newsId, $clubId]);
     $message = 'Article published.';
     $messageType = 'success';
-  } elseif ($action === 'unpublish') {
+  } elseif ($action === 'unpublish' && $canEdit) {
     $newsId = (int)($_POST['news_id'] ?? 0);
     $stmt = $pdo->prepare("UPDATE club_news SET published_at = NULL WHERE id = ? AND club_id = ?");
     $stmt->execute([$newsId, $clubId]);
     $message = 'Article unpublished.';
     $messageType = 'info';
-  } elseif ($action === 'update_news') {
+  } elseif ($action === 'update_news' && $canEdit) {
     $newsId = (int)($_POST['news_id'] ?? 0);
     $title = trim($_POST['title'] ?? '');
     $content = trim($_POST['content'] ?? '');

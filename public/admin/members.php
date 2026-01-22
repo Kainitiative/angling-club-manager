@@ -83,10 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
       $stmt->execute([$memberId]);
       $message = "Removed {$member['name']} from the club.";
       $messageType = 'info';
-    } elseif ($action === 'set_role' && $canSetRole) {
+    } elseif ($action === 'set_role') {
       $newRole = $_POST['committee_role'] ?? 'member';
-      // Owners/admins can set their own committee role, but not admin roles via this form
-      if (array_key_exists($newRole, $committeeRoles) && !is_admin_role($newRole)) {
+      $isSelfAssign = ($member['user_id'] == $userId);
+      $currentUserIsAdmin = is_club_admin($pdo, $userId, $clubId);
+      
+      // Allow role change if:
+      // 1. User has set_role permission AND target is NOT an admin (changing other's roles)
+      // 2. OR User is an admin AND changing their own role (self-assign)
+      $canChangeThisRole = ($canSetRole && !$targetIsAdmin) || ($isSelfAssign && $currentUserIsAdmin);
+      
+      if ($canChangeThisRole && array_key_exists($newRole, $committeeRoles) && !is_admin_role($newRole)) {
         $stmt = $pdo->prepare("UPDATE club_members SET committee_role = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$newRole, $memberId]);
         $message = "Updated role for {$member['name']} to " . get_role_display_name($newRole) . ".";

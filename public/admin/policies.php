@@ -119,6 +119,12 @@ $activeTab = $_GET['tab'] ?? 'constitution';
       </ul>
     </div>
     <div class="card-body">
+      <?php if (!$canEdit): ?>
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-eye me-2"></i>
+          <strong>View Only</strong> - You can view policies but cannot edit them with your current role.
+        </div>
+      <?php endif; ?>
       <form method="post">
         <input type="hidden" name="action" value="save_policies">
         
@@ -126,7 +132,7 @@ $activeTab = $_GET['tab'] ?? 'constitution';
           <div class="mb-3">
             <label for="constitution" class="form-label">Club Constitution</label>
             <p class="text-muted small">The formal rules that govern your club's structure, leadership, and decision-making processes.</p>
-            <textarea class="form-control" id="constitution" name="constitution" rows="20" placeholder="Enter your club constitution here...
+            <textarea class="form-control" id="constitution" name="constitution" rows="20" <?= !$canEdit ? 'readonly disabled' : '' ?> placeholder="Enter your club constitution here...
 
 Example sections:
 1. Name and Objectives
@@ -141,7 +147,7 @@ Example sections:
           <div class="mb-3">
             <label for="rules_policies" class="form-label">Club Rules & Policies</label>
             <p class="text-muted small">Day-to-day rules for members, fishing regulations, and code of conduct.</p>
-            <textarea class="form-control" id="rules_policies" name="rules_policies" rows="20" placeholder="Enter your club rules here...
+            <textarea class="form-control" id="rules_policies" name="rules_policies" rows="20" <?= !$canEdit ? 'readonly disabled' : '' ?> placeholder="Enter your club rules here...
 
 Example sections:
 - Fishing Rules
@@ -156,7 +162,7 @@ Example sections:
           <div class="mb-3">
             <label for="privacy_policy" class="form-label">Privacy Policy</label>
             <p class="text-muted small">How your club collects, uses, and protects member data.</p>
-            <textarea class="form-control" id="privacy_policy" name="privacy_policy" rows="20" placeholder="Enter your privacy policy here...
+            <textarea class="form-control" id="privacy_policy" name="privacy_policy" rows="20" <?= !$canEdit ? 'readonly disabled' : '' ?> placeholder="Enter your privacy policy here...
 
 Example sections:
 - Data We Collect
@@ -170,7 +176,7 @@ Example sections:
           <div class="mb-3">
             <label for="membership_terms" class="form-label">Membership Terms & Conditions</label>
             <p class="text-muted small">Terms that members agree to when joining, including fees, cancellation, and expectations.</p>
-            <textarea class="form-control" id="membership_terms" name="membership_terms" rows="20" placeholder="Enter your membership terms here...
+            <textarea class="form-control" id="membership_terms" name="membership_terms" rows="20" <?= !$canEdit ? 'readonly disabled' : '' ?> placeholder="Enter your membership terms here...
 
 Example sections:
 - Membership Categories
@@ -183,7 +189,9 @@ Example sections:
         <?php endif; ?>
         
         <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <?php if ($canEdit): ?>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          <?php endif; ?>
           <a href="/public/policies.php?slug=<?= e($club['slug']) ?>" class="btn btn-outline-secondary" target="_blank">Preview Public Page</a>
         </div>
       </form>
