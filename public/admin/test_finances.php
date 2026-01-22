@@ -15,14 +15,17 @@ try {
     require_once __DIR__ . '/../../app/layout/club_admin_shell.php';
     echo "<p style='color:green'>Layout file loaded OK</p>";
     
-    echo "<p>Step 3: Checking login status...</p>";
+    echo "<p>Step 3: Checking session...</p>";
+    echo "<p>Session ID: " . session_id() . "</p>";
+    echo "<p>Session data: " . json_encode($_SESSION) . "</p>";
     $userId = current_user_id();
     if (!$userId) {
-        echo "<p style='color:orange'>Not logged in - please log in first, then return here.</p>";
-        echo "<p><a href='/public/auth/login.php'>Go to Login</a></p>";
-        exit;
+        echo "<p style='color:orange'>Session exists but user_id not set.</p>";
+        echo "<p>This means you're logged in on one session but this page uses a different session.</p>";
+        echo "<p>Try visiting: <a href='/public/admin/finances.php?club_id=1'>finances.php</a> directly</p>";
+    } else {
+        echo "<p style='color:green'>Login OK - User ID: $userId</p>";
     }
-    echo "<p style='color:green'>Login OK - User ID: $userId</p>";
     
     echo "<p>Step 4: Getting club...</p>";
     $clubId = (int)($_GET['club_id'] ?? 1);
