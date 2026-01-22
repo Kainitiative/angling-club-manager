@@ -43,6 +43,30 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **Automatic Database Installer**: First-load setup system (`install.php`) for cPanel/LAMP environments that detects missing config or tables and executes the MySQL schema (`db/install_schema.sql`). Bootstrap checks 5 critical tables before allowing app to run. Creates `setup.lock` after successful installation.
 - **Pollution & Poaching Reporting (Planned)**: A comprehensive incident reporting system allowing users to log environmental issues or illegal activities with photo evidence and location tagging, facilitating direct escalation to club officers and national authorities (IFI/NPWS).
 - **RSS Feed Personalization (Planned)**: Strategy to filter and prioritize RSS feed content based on user-defined favorite fishing styles.
+- **Public Interactive Map (Planned)**: A full-screen Google Maps integration showing public pins for all entity types:
+    - **Pin Types**: Clubs (HQ address), Competitions (venues linked to competition data), Syndicates (water locations), Charter Boats (departure points), Commercial Fisheries (locations), Angling Guides (operating areas).
+    - **Pin Management**: Each entity type can add/edit their own pins via admin UI, reusing the existing competition map modal.
+    - **Visibility Control**: Pins can be set as public or private by admins.
+    - **Features**: Filtering by pin type, marker clustering, search by name/area, mobile-responsive design.
+    - **Database**: New `map_pins` table with polymorphic entity linking (entity_type + entity_id), lat/lng, address, visibility, timestamps.
+    - **API Key**: Google Maps API key via environment variable.
+- **Club Challenges (Planned)**: A system for inter-club competitions and bragging rights:
+    - **Challenge Flow**: Club A invites Club B → Club B accepts/declines → Competition(s) run → Joint results calculated → Winner declared.
+    - **Joint Leaderboards**: Combined results showing top anglers from both clubs, with per-club aggregate scores.
+    - **Challenge Types**: Single shared competition, parallel events, or season-long series.
+    - **Scoring Rules**: Configurable via rules (sum of top N anglers, best N results, weight vs points).
+    - **Database**: New `club_challenges` table (challenger/challenged clubs, status, dates, ruleset), `challenge_competitions` join table, `challenge_results` for standings.
+    - **UI**: "Challenges" tab in club admin for invite/accept/decline, challenge wizard, public display of active/past challenges.
+- **Internal Club Leaderboards (Planned)**: Customizable member ranking systems for each club:
+    - **Leaderboard Types**: Catch count, total weight, biggest fish, species variety, competition points.
+    - **Time Scopes**: Seasonal, all-time, or custom date ranges.
+    - **Calculation**: Automatic updates triggered by catch logs or competition results.
+    - **Database**: New `club_leaderboards` table (club_id, metric type, scope, rules), `leaderboard_entries` for cached ranks.
+    - **UI**: Club admin can create/configure leaderboards; member rankings displayed on club page and dashboards.
+- **Gamification & Badges (Planned)**: Achievement system to reward engagement:
+    - **Badge Types**: Challenge wins, leaderboard podium finishes, personal bests, species milestones, competition participation.
+    - **Database**: New `badges` and `user_badges` tables.
+    - **Integration**: Notifications when badges are earned, badge display on user profiles.
 
 ## External Dependencies
 - **Database Systems**: MySQL/MariaDB (for local development) and PostgreSQL (for Replit deployment).
