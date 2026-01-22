@@ -63,10 +63,13 @@ try {
   ]);
   
   if (!file_exists($lockFile)) {
-    $stmt = $pdo->query("SHOW TABLES LIKE 'users'");
-    if ($stmt->rowCount() === 0) {
-      header('Location: /install.php');
-      exit;
+    $requiredTables = ['users', 'clubs', 'club_members', 'competitions', 'catch_logs'];
+    foreach ($requiredTables as $table) {
+      $stmt = $pdo->query("SHOW TABLES LIKE '$table'");
+      if ($stmt->rowCount() === 0) {
+        header('Location: /install.php');
+        exit;
+      }
     }
   }
 } catch (Throwable $e) {

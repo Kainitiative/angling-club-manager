@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_users_parent (parent_id),
-  INDEX idx_users_junior (is_junior)
+  INDEX idx_users_junior (is_junior),
+  CONSTRAINT fk_users_parent FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================
@@ -98,8 +99,10 @@ CREATE TABLE IF NOT EXISTS club_members (
   UNIQUE KEY unique_club_member (club_id, user_id),
   CONSTRAINT fk_club_members_club FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE,
   CONSTRAINT fk_club_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_club_members_parent FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_club_members_status (membership_status),
-  INDEX idx_club_members_role (committee_role)
+  INDEX idx_club_members_role (committee_role),
+  INDEX idx_club_members_parent (parent_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================

@@ -14,7 +14,7 @@ public_shell_start(['title' => $pageTitle]);
     <div class="col-lg-8">
       
       <h1 class="mb-4">Privacy Policy</h1>
-      <p class="text-muted mb-4"><strong>Last Updated:</strong> December 2024</p>
+      <p class="text-muted mb-4"><strong>Last Updated:</strong> January 2026</p>
       
       <div class="alert alert-success mb-5">
         <h5 class="alert-heading mb-2"><i class="bi bi-shield-check me-2"></i>Our Commitment to You</h5>
@@ -27,14 +27,13 @@ public_shell_start(['title' => $pageTitle]);
 
       <section class="mb-5">
         <h2>1. Who We Are</h2>
-        <p>Club Manager Platform ("we", "us", "our") is operated by:</p>
+        <p>Angling Ireland ("we", "us", "our") is operated by:</p>
         <address>
           <strong>Patrick Ryan Digital Design</strong><br>
-          [Business Address - To Be Updated]<br>
           Ireland<br>
-          Email: [privacy@clubmanagerplatform.ie - To Be Updated]
+          Email: <a href="mailto:privacy@anglingireland.ie">privacy@anglingireland.ie</a>
         </address>
-        <p>Website: <a href="https://www.clubmanagerplatform.ie">www.clubmanagerplatform.ie</a></p>
+        <p>Website: <a href="https://www.anglingireland.ie">www.anglingireland.ie</a></p>
       </section>
 
       <section class="mb-5">
@@ -94,15 +93,11 @@ public_shell_start(['title' => $pageTitle]);
           </thead>
           <tbody>
             <tr>
-              <td>Provide the Club Manager Platform service</td>
+              <td>Provide the Angling Ireland service</td>
               <td>Contract performance</td>
             </tr>
             <tr>
               <td>Manage your account and club memberships</td>
-              <td>Contract performance</td>
-            </tr>
-            <tr>
-              <td>Process subscription payments</td>
               <td>Contract performance</td>
             </tr>
             <tr>
@@ -129,7 +124,6 @@ public_shell_start(['title' => $pageTitle]);
         <h2>5. Who We Share Your Data With</h2>
         <p>We share data only with trusted service providers who help us operate the platform:</p>
         <ul>
-          <li><strong>Stripe:</strong> Payment processing for subscriptions</li>
           <li><strong>Google:</strong> Analytics and optional sign-in services</li>
           <li><strong>Cloud hosting provider:</strong> Secure data storage</li>
           <li><strong>Email service provider:</strong> System notifications</li>
@@ -140,7 +134,7 @@ public_shell_start(['title' => $pageTitle]);
 
       <section class="mb-5">
         <h2>6. International Data Transfers</h2>
-        <p>Some of our service providers (such as Stripe and Google) may process data outside the European Economic Area (EEA). When this happens, we ensure appropriate safeguards are in place, including:</p>
+        <p>Some of our service providers (such as Google) may process data outside the European Economic Area (EEA). When this happens, we ensure appropriate safeguards are in place, including:</p>
         <ul>
           <li>EU-approved Standard Contractual Clauses</li>
           <li>Adequacy decisions by the European Commission</li>
@@ -154,7 +148,6 @@ public_shell_start(['title' => $pageTitle]);
           <li><strong>Active accounts:</strong> Data is retained while your account is active</li>
           <li><strong>Deleted accounts:</strong> Personal data is anonymized. Catch logs and club records may be retained in anonymized form for club statistics and records</li>
           <li><strong>Left a club:</strong> Your membership records are anonymized (shown as "Former Member") but club records are preserved</li>
-          <li><strong>Payment records:</strong> Retained for 7 years as required by tax law</li>
         </ul>
       </section>
 
@@ -170,7 +163,7 @@ public_shell_start(['title' => $pageTitle]);
           <li><strong>Right to Object:</strong> Object to processing based on legitimate interests</li>
           <li><strong>Right to Withdraw Consent:</strong> Withdraw consent at any time where processing is based on consent</li>
         </ul>
-        <p>To exercise any of these rights, contact us at [privacy@clubmanagerplatform.ie - To Be Updated]. We will respond within 30 days.</p>
+        <p>To exercise any of these rights, contact us at <a href="mailto:privacy@anglingireland.ie">privacy@anglingireland.ie</a>. We will respond within 30 days.</p>
       </section>
 
       <section class="mb-5">
@@ -217,7 +210,7 @@ public_shell_start(['title' => $pageTitle]);
         <p>For any questions about this Privacy Policy or to exercise your data rights:</p>
         <address>
           <strong>Patrick Ryan Digital Design</strong><br>
-          Email: [privacy@clubmanagerplatform.ie - To Be Updated]
+          Email: <a href="mailto:privacy@anglingireland.ie">privacy@anglingireland.ie</a>
         </address>
       </section>
 

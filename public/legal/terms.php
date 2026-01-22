@@ -14,17 +14,17 @@ public_shell_start(['title' => $pageTitle]);
     <div class="col-lg-8">
       
       <h1 class="mb-4">Terms & Conditions</h1>
-      <p class="text-muted mb-4"><strong>Last Updated:</strong> December 2024</p>
+      <p class="text-muted mb-4"><strong>Last Updated:</strong> January 2026</p>
       
-      <p class="lead mb-5">Please read these Terms & Conditions carefully before using Club Manager Platform. By accessing or using our service, you agree to be bound by these terms.</p>
+      <p class="lead mb-5">Please read these Terms & Conditions carefully before using Angling Ireland. By accessing or using our service, you agree to be bound by these terms.</p>
 
       <section class="mb-5">
         <h2>1. Definitions</h2>
         <ul>
-          <li><strong>"Platform"</strong> refers to Club Manager Platform, accessible at www.clubmanagerplatform.ie</li>
+          <li><strong>"Platform"</strong> refers to Angling Ireland, accessible at www.anglingireland.ie</li>
           <li><strong>"We", "Us", "Our"</strong> refers to Patrick Ryan Digital Design</li>
           <li><strong>"User", "You"</strong> refers to anyone who accesses or uses the Platform</li>
-          <li><strong>"Club"</strong> refers to an angling club created and managed on the Platform</li>
+          <li><strong>"Club"</strong> refers to an angling club, syndicate, fishery, guide, or charter created and managed on the Platform</li>
           <li><strong>"Club Admin"</strong> refers to the owner or administrator of a club</li>
           <li><strong>"Member"</strong> refers to a user who has joined a club</li>
         </ul>
@@ -82,7 +82,6 @@ public_shell_start(['title' => $pageTitle]);
           <li>Managing membership requests and member conduct</li>
           <li>Ensuring club content complies with these Terms</li>
           <li>Maintaining accurate club information</li>
-          <li>Subscription payments (for paid plans)</li>
         </ul>
       </section>
 
@@ -128,7 +127,7 @@ public_shell_start(['title' => $pageTitle]);
 
       <section class="mb-5">
         <h2>7. Platform Usage</h2>
-        <p>Angling Ireland is provided as a free service to the Irish angling community. There are no subscription fees for clubs, fisheries, or individual users.</p>
+        <p>Angling Ireland is provided as a <strong>free-forever service</strong> to the Irish angling community. There are no subscription fees for clubs, fisheries, syndicates, guides, charter boats, or individual users.</p>
       </section>
 
       <section class="mb-5">
@@ -138,7 +137,6 @@ public_shell_start(['title' => $pageTitle]);
         <ul>
           <li>Your personal data will be anonymized</li>
           <li>Catch logs and club contributions may be retained in anonymized form</li>
-          <li>Any active subscription will continue until the end of the billing period (no refund)</li>
         </ul>
         
         <h5>8.2 By Us</h5>
@@ -146,7 +144,6 @@ public_shell_start(['title' => $pageTitle]);
         <ul>
           <li>Violate these Terms & Conditions</li>
           <li>Engage in fraudulent or illegal activity</li>
-          <li>Fail to pay subscription fees (for club admins)</li>
           <li>Abuse or harass other users</li>
         </ul>
         <p>We will provide notice where possible, except in cases of serious violations.</p>
@@ -169,7 +166,6 @@ public_shell_start(['title' => $pageTitle]);
         <p>To the maximum extent permitted by law:</p>
         <ul>
           <li>We are not liable for any indirect, incidental, special, or consequential damages</li>
-          <li>Our total liability shall not exceed the amount you have paid us in the 12 months prior to the claim</li>
           <li>We are not responsible for user-generated content or actions of other users</li>
           <li>We are not liable for any loss of data, profits, or business opportunities</li>
         </ul>
@@ -209,10 +205,9 @@ public_shell_start(['title' => $pageTitle]);
         <p>For questions about these Terms & Conditions:</p>
         <address>
           <strong>Patrick Ryan Digital Design</strong><br>
-          [Business Address - To Be Updated]<br>
           Ireland<br>
-          Email: [contact@clubmanagerplatform.ie - To Be Updated]<br>
-          Website: <a href="https://www.clubmanagerplatform.ie">www.clubmanagerplatform.ie</a>
+          Email: <a href="mailto:info@anglingireland.ie">info@anglingireland.ie</a><br>
+          Website: <a href="https://www.anglingireland.ie">www.anglingireland.ie</a>
         </address>
       </section>
 

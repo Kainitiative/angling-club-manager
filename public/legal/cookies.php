@@ -14,9 +14,9 @@ public_shell_start(['title' => $pageTitle]);
     <div class="col-lg-8">
       
       <h1 class="mb-4">Cookie Policy</h1>
-      <p class="text-muted mb-4"><strong>Last Updated:</strong> December 2024</p>
+      <p class="text-muted mb-4"><strong>Last Updated:</strong> January 2026</p>
       
-      <p class="lead mb-5">This Cookie Policy explains how Club Manager Platform uses cookies and similar technologies when you visit our website.</p>
+      <p class="lead mb-5">This Cookie Policy explains how Angling Ireland uses cookies and similar technologies when you visit our website.</p>
 
       <section class="mb-5">
         <h2>1. What Are Cookies?</h2>
@@ -150,11 +150,6 @@ public_shell_start(['title' => $pageTitle]);
                   <td><a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></td>
                 </tr>
                 <tr>
-                  <td><strong>Stripe</strong></td>
-                  <td>Payment processing</td>
-                  <td><a href="https://stripe.com/privacy" target="_blank">Stripe Privacy Policy</a></td>
-                </tr>
-                <tr>
                   <td><strong>Social Media</strong></td>
                   <td>Share buttons, embedded content</td>
                   <td>See individual platform policies</td>
@@ -212,8 +207,8 @@ public_shell_start(['title' => $pageTitle]);
         <p>If you have questions about our use of cookies:</p>
         <address>
           <strong>Patrick Ryan Digital Design</strong><br>
-          Email: [privacy@clubmanagerplatform.ie - To Be Updated]<br>
-          Website: <a href="https://www.clubmanagerplatform.ie">www.clubmanagerplatform.ie</a>
+          Email: <a href="mailto:privacy@anglingireland.ie">privacy@anglingireland.ie</a><br>
+          Website: <a href="https://www.anglingireland.ie">www.anglingireland.ie</a>
         </address>
         <p>For more information about your data rights, please see our <a href="/public/legal/privacy.php">Privacy Policy</a>.</p>
       </section>

@@ -26,9 +26,9 @@ Options -Indexes
     RewriteRule ^db/.*$ - [F,L]
 </IfModule>
 
-# Error documents
-ErrorDocument 404 /app/error_pages/404.php
-ErrorDocument 500 /app/error_pages/500.php
+# Error documents (served from public directory)
+ErrorDocument 404 /errors/404.php
+ErrorDocument 500 /errors/500.php
 
 # PHP settings (if allowed by host)
 <IfModule mod_php.c>
