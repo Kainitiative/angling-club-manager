@@ -28,7 +28,8 @@ Options -Indexes
 
 # Error documents (served from public directory)
 ErrorDocument 404 /errors/404.php
-ErrorDocument 500 /errors/500.php
+# ErrorDocument 500 /errors/500.php
+# Temporarily disabled to see raw PHP errors
 
 # PHP settings (if allowed by host)
 <IfModule mod_php.c>
