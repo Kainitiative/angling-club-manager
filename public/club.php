@@ -308,7 +308,15 @@ $billingPeriodLabels = [
 $pageTitle = e($club['name']);
 $currentPage = 'club';
 if ($isLoggedIn) {
-  member_shell_start($pdo, ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Clubs']);
+  $shellOptions = ['title' => $pageTitle, 'page' => $currentPage, 'section' => 'Clubs'];
+  if ($isAdmin || $isMember) {
+    $shellOptions['club'] = [
+      'id' => $club['id'],
+      'slug' => $club['slug'],
+      'name' => $club['name']
+    ];
+  }
+  member_shell_start($pdo, $shellOptions);
 } else {
   public_shell_start($pageTitle);
 }

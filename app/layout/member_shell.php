@@ -24,6 +24,13 @@ function member_shell_start($pdo, $options = []) {
     $currentPage = $options['page'] ?? $currentPage ?? 'home';
     $section = $options['section'] ?? '';
     
+    $clubContext = $options['club'] ?? null;
+    $clubNav = null;
+    
+    if ($clubContext && isset($clubContext['id'], $clubContext['slug'])) {
+        $clubNav = get_club_admin_nav($clubContext['id'], $clubContext['slug']);
+    }
+    
     // Get badge counts - stored globally so shell_end can access them
     global $__member_shell_unread_notifications, $__member_shell_unread_messages;
     $unreadNotifications = 0;
@@ -88,6 +95,20 @@ function member_shell_start($pdo, $options = []) {
                     </a>
                 <?php endforeach; ?>
             </div>
+            
+            <?php if ($clubNav && $clubContext): ?>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title"><?= e($clubContext['name'] ?? 'Club') ?></div>
+                <?php foreach ($clubNav as $section): ?>
+                    <?php foreach ($section['items'] as $item): ?>
+                        <a href="<?= e($item['url']) ?>" class="sidebar-link <?= $currentPage === $item['id'] ? 'active' : '' ?>">
+                            <i class="bi bi-<?= $item['icon'] ?>"></i>
+                            <?= e($item['label']) ?>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
             
             <?php if ($isSuperAdmin): ?>
             <div class="sidebar-section">
