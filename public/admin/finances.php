@@ -110,26 +110,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
   
   if ($action === 'add_account') {
     $accountName = trim($_POST['account_name'] ?? '');
-    $accountType = $_POST['account_type'] ?? 'bank';
     $balance = (float)($_POST['balance'] ?? 0);
-    $notes = trim($_POST['notes'] ?? '') ?: null;
     
     if ($accountName) {
-      $stmt = $pdo->prepare("INSERT INTO club_accounts (club_id, account_name, account_type, balance, notes) VALUES (?, ?, ?, ?, ?)");
-      $stmt->execute([$clubId, $accountName, $accountType, $balance, $notes]);
+      try {
+        $stmt = $pdo->prepare("INSERT INTO club_accounts (club_id, account_name, account_type, balance, notes) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$clubId, $accountName, $_POST['account_type'] ?? 'bank', $balance, trim($_POST['notes'] ?? '') ?: null]);
+      } catch (PDOException $e) {
+        try {
+          $stmt = $pdo->prepare("INSERT INTO club_accounts (club_id, name, balance) VALUES (?, ?, ?)");
+          $stmt->execute([$clubId, $accountName, $balance]);
+        } catch (PDOException $e2) {
+        }
+      }
       $message = 'Account added.';
       $messageType = 'success';
     }
   } elseif ($action === 'update_account') {
     $accountId = (int)($_POST['account_id'] ?? 0);
     $accountName = trim($_POST['account_name'] ?? '');
-    $accountType = $_POST['account_type'] ?? 'bank';
     $balance = (float)($_POST['balance'] ?? 0);
-    $notes = trim($_POST['notes'] ?? '') ?: null;
     
     if ($accountId && $accountName) {
-      $stmt = $pdo->prepare("UPDATE club_accounts SET account_name = ?, account_type = ?, balance = ?, notes = ? WHERE id = ? AND club_id = ?");
-      $stmt->execute([$accountName, $accountType, $balance, $notes, $accountId, $clubId]);
+      try {
+        $stmt = $pdo->prepare("UPDATE club_accounts SET account_name = ?, account_type = ?, balance = ?, notes = ? WHERE id = ? AND club_id = ?");
+        $stmt->execute([$accountName, $_POST['account_type'] ?? 'bank', $balance, trim($_POST['notes'] ?? '') ?: null, $accountId, $clubId]);
+      } catch (PDOException $e) {
+        try {
+          $stmt = $pdo->prepare("UPDATE club_accounts SET name = ?, balance = ? WHERE id = ? AND club_id = ?");
+          $stmt->execute([$accountName, $balance, $accountId, $clubId]);
+        } catch (PDOException $e2) {
+        }
+      }
       $message = 'Account updated.';
       $messageType = 'success';
     }
@@ -207,27 +219,32 @@ if ($filterCategory) {
   $params[] = $filterCategory;
 }
 
-if ($isPostgres) {
-  $stmt = $pdo->prepare("
-    SELECT ct.*, ct.transaction_date as entry_date, ct.transaction_type as entry_type,
-           u.name as created_by_name
-    FROM $financeTable ct
-    LEFT JOIN users u ON ct.created_by = u.id
-    WHERE $whereClause
-    ORDER BY ct.transaction_date DESC, ct.created_at DESC
-  ");
-} else {
-  $stmt = $pdo->prepare("
-    SELECT ct.*, ct.transaction_date as entry_date, ct.type as entry_type,
-           u.name as created_by_name
-    FROM $financeTable ct
-    LEFT JOIN users u ON ct.created_by = u.id
-    WHERE $whereClause
-    ORDER BY ct.transaction_date DESC, ct.created_at DESC
-  ");
+$entries = [];
+try {
+  if ($isPostgres) {
+    $stmt = $pdo->prepare("
+      SELECT ct.*, ct.transaction_date as entry_date, ct.transaction_type as entry_type,
+             u.name as created_by_name
+      FROM $financeTable ct
+      LEFT JOIN users u ON ct.created_by = u.id
+      WHERE $whereClause
+      ORDER BY ct.transaction_date DESC, ct.created_at DESC
+    ");
+  } else {
+    $stmt = $pdo->prepare("
+      SELECT ct.*, ct.transaction_date as entry_date, ct.type as entry_type,
+             u.name as created_by_name
+      FROM $financeTable ct
+      LEFT JOIN users u ON ct.created_by = u.id
+      WHERE $whereClause
+      ORDER BY ct.transaction_date DESC, ct.created_at DESC
+    ");
+  }
+  $stmt->execute($params);
+  $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+  $entries = [];
 }
-$stmt->execute($params);
-$entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $totalIncome = 0;
 $totalExpense = 0;
@@ -240,47 +257,25 @@ foreach ($entries as $entry) {
 }
 $balance = $totalIncome - $totalExpense;
 
-if ($isPostgres) {
-  $stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
-} else {
-  $stmt = $pdo->prepare("SELECT DISTINCT YEAR(transaction_date) as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
-}
-$stmt->execute([$clubId]);
-$availableYears = $stmt->fetchAll(PDO::FETCH_COLUMN);
-if (empty($availableYears)) {
-  $availableYears = [date('Y')];
+$availableYears = [date('Y')];
+try {
+  if ($isPostgres) {
+    $stmt = $pdo->prepare("SELECT DISTINCT EXTRACT(YEAR FROM transaction_date)::int as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
+  } else {
+    $stmt = $pdo->prepare("SELECT DISTINCT YEAR(transaction_date) as year FROM $financeTable WHERE club_id = ? ORDER BY year DESC");
+  }
+  $stmt->execute([$clubId]);
+  $years = $stmt->fetchAll(PDO::FETCH_COLUMN);
+  if (!empty($years)) {
+    $availableYears = $years;
+  }
+} catch (PDOException $e) {
 }
 
 $reportData = [];
 if ($showReport) {
   $reportYear = $filterYear ?: date('Y');
-  if ($isPostgres) {
-    $stmt = $pdo->prepare("
-      SELECT 
-        EXTRACT(MONTH FROM transaction_date)::int as month,
-        category,
-        transaction_type as entry_type,
-        SUM(amount) as total
-      FROM $financeTable
-      WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
-      GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
-      ORDER BY EXTRACT(MONTH FROM transaction_date)
-    ");
-  } else {
-    $stmt = $pdo->prepare("
-      SELECT 
-        MONTH(transaction_date) as month,
-        category,
-        type as entry_type,
-        SUM(amount) as total
-      FROM $financeTable
-      WHERE club_id = ? AND YEAR(transaction_date) = ?
-      GROUP BY MONTH(transaction_date), category, type
-      ORDER BY MONTH(transaction_date)
-    ");
-  }
-  $stmt->execute([$clubId, $reportYear]);
-  $rawReport = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  $rawReport = [];
   
   $monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
@@ -291,6 +286,37 @@ if ($showReport) {
       'expense' => 0,
       'categories' => []
     ];
+  }
+  
+  try {
+    if ($isPostgres) {
+      $stmt = $pdo->prepare("
+        SELECT 
+          EXTRACT(MONTH FROM transaction_date)::int as month,
+          category,
+          transaction_type as entry_type,
+          SUM(amount) as total
+        FROM $financeTable
+        WHERE club_id = ? AND EXTRACT(YEAR FROM transaction_date) = ?
+        GROUP BY EXTRACT(MONTH FROM transaction_date), category, transaction_type
+        ORDER BY EXTRACT(MONTH FROM transaction_date)
+      ");
+    } else {
+      $stmt = $pdo->prepare("
+        SELECT 
+          MONTH(transaction_date) as month,
+          category,
+          type as entry_type,
+          SUM(amount) as total
+        FROM $financeTable
+        WHERE club_id = ? AND YEAR(transaction_date) = ?
+        GROUP BY MONTH(transaction_date), category, type
+        ORDER BY MONTH(transaction_date)
+      ");
+    }
+    $stmt->execute([$clubId, $reportYear]);
+    $rawReport = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  } catch (PDOException $e) {
   }
   
   foreach ($rawReport as $row) {
@@ -306,7 +332,7 @@ if ($showReport) {
 
 $accounts = [];
 try {
-  $stmt = $pdo->prepare("SELECT * FROM club_accounts WHERE club_id = ? ORDER BY account_name");
+  $stmt = $pdo->prepare("SELECT * FROM club_accounts WHERE club_id = ? ORDER BY id");
   $stmt->execute([$clubId]);
   $accounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
