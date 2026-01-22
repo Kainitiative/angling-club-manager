@@ -50,6 +50,8 @@ if (isset($config['site'])) {
 }
 
 $driver = $db['driver'] ?? 'mysql';
+define('DB_DRIVER', $driver);
+
 if ($driver === 'pgsql') {
   $dsn = "pgsql:host={$db['host']};port={$db['port']};dbname={$db['name']}";
 } else {
