@@ -84,12 +84,28 @@ if (!$isPostgres) {
     ");
     $speciesCheck = $pdo->query("SELECT COUNT(*) FROM fish_species")->fetchColumn();
     if ($speciesCheck == 0) {
-      $pdo->exec("INSERT INTO fish_species (name, category, display_order) VALUES 
-        ('Pike', 'coarse', 1), ('Perch', 'coarse', 2), ('Bream', 'coarse', 3), ('Roach', 'coarse', 4), ('Rudd', 'coarse', 5),
-        ('Tench', 'coarse', 6), ('Carp', 'coarse', 7), ('Eel', 'coarse', 8), ('Brown Trout', 'game', 10), ('Sea Trout', 'game', 11),
-        ('Salmon', 'game', 12), ('Rainbow Trout', 'game', 13), ('Bass', 'sea', 20), ('Cod', 'sea', 21), ('Pollock', 'sea', 22),
-        ('Mackerel', 'sea', 23), ('Ray', 'sea', 24), ('Tope', 'sea', 25), ('Other', 'other', 99)
-      ");
+      $hasDispOrder = false;
+      try {
+        $pdo->query("SELECT display_order FROM fish_species LIMIT 1");
+        $hasDispOrder = true;
+      } catch (PDOException $e) {
+        $hasDispOrder = false;
+      }
+      if ($hasDispOrder) {
+        $pdo->exec("INSERT INTO fish_species (name, category, display_order) VALUES 
+          ('Pike', 'coarse', 1), ('Perch', 'coarse', 2), ('Bream', 'coarse', 3), ('Roach', 'coarse', 4), ('Rudd', 'coarse', 5),
+          ('Tench', 'coarse', 6), ('Carp', 'coarse', 7), ('Eel', 'coarse', 8), ('Brown Trout', 'game', 10), ('Sea Trout', 'game', 11),
+          ('Salmon', 'game', 12), ('Rainbow Trout', 'game', 13), ('Bass', 'sea', 20), ('Cod', 'sea', 21), ('Pollock', 'sea', 22),
+          ('Mackerel', 'sea', 23), ('Ray', 'sea', 24), ('Tope', 'sea', 25), ('Other', 'other', 99)
+        ");
+      } else {
+        $pdo->exec("INSERT INTO fish_species (name, category) VALUES 
+          ('Pike', 'coarse'), ('Perch', 'coarse'), ('Bream', 'coarse'), ('Roach', 'coarse'), ('Rudd', 'coarse'),
+          ('Tench', 'coarse'), ('Carp', 'coarse'), ('Eel', 'coarse'), ('Brown Trout', 'game'), ('Sea Trout', 'game'),
+          ('Salmon', 'game'), ('Rainbow Trout', 'game'), ('Bass', 'sea'), ('Cod', 'sea'), ('Pollock', 'sea'),
+          ('Mackerel', 'sea'), ('Ray', 'sea'), ('Tope', 'sea'), ('Other', 'other')
+        ");
+      }
     }
   } catch (PDOException $e) {
   }
