@@ -67,6 +67,39 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
     - **Badge Types**: Challenge wins, leaderboard podium finishes, personal bests, species milestones, competition participation.
     - **Database**: New `badges` and `user_badges` tables.
     - **Integration**: Notifications when badges are earned, badge display on user profiles.
+- **Fish Species Encyclopedia (Planned)**: Comprehensive guide to all fish species found in Irish waters:
+    - **Species Profiles**: Each species has a dedicated page with photo, common name, scientific name, and category (coarse/game/sea).
+    - **Information Sections**: Physical description, habitat preferences, feeding habits, best catch methods, bait recommendations, seasonal patterns, specimen weight thresholds.
+    - **Irish Context**: Distribution across Irish waters, notable fisheries, conservation status, ISFC specimen requirements.
+    - **Integration**: Link species from catch logs, show "species caught" progress on member profiles.
+    - **Database**: Extend existing `fish_species` table with additional fields (description, habitat, methods, image_url, etc.).
+- **Personal Statistics Dashboard (Planned)**: Visual analytics for members showing:
+    - Catch history charts (monthly/yearly trends)
+    - Species breakdown (pie chart of catches by species)
+    - Personal bests timeline
+    - Seasonal patterns and best fishing periods
+    - Competition performance history
+- **Fishing Journal (Planned)**: Private diary feature for members:
+    - Log fishing trips with notes, conditions, observations
+    - Attach photos and locations
+    - Link to catch logs from that session
+    - Weather conditions auto-captured
+    - Search and filter past entries
+- **Angler Goals & Wishlist (Planned)**: Goal-tracking for members:
+    - Species wishlist (fish they want to catch)
+    - Personal best targets (beat current PB by X)
+    - Competition goals (enter N competitions this season)
+    - Progress tracking with notifications when achieved
+- **Weather & Conditions Integration (Planned)**: Fishing forecast features:
+    - Current weather for member's location
+    - Multi-day fishing forecast
+    - Tide tables for sea anglers
+    - Moon phases and solunar data
+    - Best fishing times predictions
+- **Data Export (Planned)**: Allow members to download their data:
+    - Export catch logs as CSV or PDF
+    - Personal statistics report
+    - GDPR data export compliance
 
 ## External Dependencies
 - **Database Systems**: MySQL/MariaDB (for local development) and PostgreSQL (for Replit deployment).
