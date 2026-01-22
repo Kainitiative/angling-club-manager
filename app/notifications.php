@@ -29,6 +29,32 @@ function notify_membership_rejected(PDO $pdo, int $userId, int $clubId, string $
   );
 }
 
+function notify_membership_request(PDO $pdo, int $clubId, string $clubName, string $applicantName): void {
+  $stmt = $pdo->prepare("
+    SELECT ca.user_id 
+    FROM club_admins ca
+    WHERE ca.club_id = ?
+    UNION
+    SELECT cm.user_id 
+    FROM club_members cm 
+    WHERE cm.club_id = ? AND cm.committee_role = 'secretary' AND cm.membership_status = 'active'
+  ");
+  $stmt->execute([$clubId, $clubId]);
+  $recipientIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+  
+  foreach ($recipientIds as $recipientId) {
+    create_notification(
+      $pdo,
+      (int)$recipientId,
+      'membership_request',
+      'New Membership Request',
+      "{$applicantName} has requested to join {$clubName}.",
+      "/public/admin/members.php?club_id={$clubId}",
+      $clubId
+    );
+  }
+}
+
 function notify_new_news(PDO $pdo, int $clubId, string $clubName, string $clubSlug, string $newsTitle): void {
   global $pdo;
   $stmt = $pdo->prepare("

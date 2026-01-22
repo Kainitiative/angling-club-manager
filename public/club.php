@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/bootstrap.php';
 require_once __DIR__ . '/../app/layout/member_shell.php';
 require_once __DIR__ . '/../app/layout/public_shell.php';
+require_once __DIR__ . '/../app/notifications.php';
 
 $slug = $_GET['slug'] ?? '';
 $message = '';
@@ -91,18 +92,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $membershipStatus = 'pending';
     $message = 'Your membership request has been submitted.';
     $messageType = 'success';
+    
+    $stmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $applicantName = $stmt->fetchColumn() ?: 'A user';
+    notify_membership_request($pdo, (int)$club['id'], $club['name'], $applicantName);
   }
   
   if ($_POST['action'] === 'join_junior' && !$isInAnyClub) {
     $juniorId = (int)$_POST['junior_id'];
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ? AND parent_id = ? AND is_junior = 1");
+    $stmt = $pdo->prepare("SELECT id, name FROM users WHERE id = ? AND parent_id = ? AND is_junior = 1");
     $stmt->execute([$juniorId, $userId]);
-    if ($stmt->fetch()) {
+    $juniorUser = $stmt->fetch();
+    if ($juniorUser) {
         try {
             $stmt = $pdo->prepare("INSERT INTO club_members (club_id, user_id, parent_user_id, membership_status) VALUES (?, ?, ?, 'pending')");
             $stmt->execute([$club['id'], $juniorId, $userId]);
             $message = 'Junior membership request submitted.';
             $messageType = 'success';
+            
+            $juniorName = $juniorUser['name'] ?: 'A junior member';
+            notify_membership_request($pdo, (int)$club['id'], $club['name'], $juniorName . ' (Junior)');
         } catch (PDOException $e) {
             $message = 'Failed to submit junior request.';
             $messageType = 'danger';
