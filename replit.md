@@ -14,7 +14,9 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **SSL Enforcement**: Managed via Cloudflare at the DNS/Edge level.
 
 ### Technical Implementations
-- **Core Structure**: `index.php` as the entry point, `app/bootstrap.php` for core application setup (session, DB connection, helpers).
+- **Core Structure**: `index.php` as the entry point, `app/bootstrap.php` for core application setup (session, DB connection, helpers, environment-based error handling).
+- **Production Error Handling**: Clean 404/500 error pages in `/errors/` directory. Environment-based display: production hides errors and logs them, development shows detailed errors.
+- **Security**: `.htaccess` with protected directories (`/app/`, `/db/`), security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection), cache control for assets.
 - **Multi-Database Architecture (Planned)**: Strategy to split data into three isolated databases:
     - **Identity DB**: User IDs, emails, password hashes.
     - **PII DB**: Real names, phone numbers, addresses (GDPR Layer).
@@ -38,7 +40,7 @@ The UI/UX prioritizes a polished and responsive experience with subtle animation
 - **Club Documents & Templates**: Comprehensive document template library for clubs including constitution template, membership application form, safeguarding policy, parental consent form, code of conduct, and privacy policy. Includes links to official NCFFI/Sport Ireland resources and a document compliance checklist. Accessible via `public/admin/documents.php`.
 - **Committee Guide**: Detailed guide for club committees covering committee structure and size guidelines, role descriptions with duties for all officer positions (Chairperson, Secretary, Treasurer, PRO, CWO, Competition Secretary), meeting management (before/during/after), best practices for running a committee, and an annual calendar template. Accessible via `public/admin/committee.php`.
 - **Angling Affiliations**: Tracking and potential integration with national bodies like the Angling Council of Ireland and its federations, with a vision for affiliation tracking and support for unified standards and national competitions.
-- **Automatic Database Installer (Planned)**: A first-load setup system for cPanel/LAMP environments that detects missing tables and automatically executes the required SQL schema to ensure the application is ready to use immediately after deployment.
+- **Automatic Database Installer**: First-load setup system (`install.php`) for cPanel/LAMP environments that detects missing config or tables and executes the MySQL schema (`db/install_schema.sql`). Bootstrap checks 5 critical tables before allowing app to run. Creates `setup.lock` after successful installation.
 - **Pollution & Poaching Reporting (Planned)**: A comprehensive incident reporting system allowing users to log environmental issues or illegal activities with photo evidence and location tagging, facilitating direct escalation to club officers and national authorities (IFI/NPWS).
 - **RSS Feed Personalization (Planned)**: Strategy to filter and prioritize RSS feed content based on user-defined favorite fishing styles.
 
