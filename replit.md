@@ -24,6 +24,7 @@ Key features include a robust user authentication system, comprehensive club man
 - **Development Database**: PostgreSQL (Replit)
 - **Zip Naming Convention**: Use `anglingirelandv{version}.zip` for releases
 - **Current Version**: v27
+- **Note**: Zip file named v25 due to Replit download caching issue
 - **Excluded from zip**: config.local.php, install.php, setup.lock, db/, replit.md
 
 ## External Dependencies
