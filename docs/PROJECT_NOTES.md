@@ -157,6 +157,70 @@ Technical SEO Tasks:
 - Friendly URL rewrites for clubs
 - Internal linking improvements
 
+### Google Maps Integration (Future)
+
+**Current State:**
+- Competition location picker exists in `public/admin/competitions.php` with full map modal
+- Features: click to place marker, draggable marker, reverse geocoding for address auto-fill
+- Currently broken: uses placeholder `YOUR_GOOGLE_MAPS_API_KEY`
+- Dashboard shows "Map" links for competitions with lat/lng stored
+- Database: `competitions` table has `latitude` and `longitude` columns
+
+**Where Maps Could Be Used:**
+| Feature | Priority | Use Case |
+|---------|----------|----------|
+| Competition locations | High | Pick venue on map, show to members |
+| Club locations | High | Display club meeting point / waters |
+| Catch log locations | Medium | Pin where fish was caught |
+| Public club directory map | Medium | Interactive map showing all clubs |
+| Fishing waters/venues | Low | Map of club waters |
+
+**Implementation Steps:**
+1. Create Google Cloud project
+2. Enable Maps JavaScript API + Geocoding API
+3. Create restricted API key (HTTP referrer restrictions for anglingireland.ie)
+4. Store key as secret in config
+5. Update code to load key from config/environment variable
+6. Add enable/disable toggle for fallback
+
+**Cost Control Strategies (Recommended: Combine Quota + Toggle):**
+
+1. **API Key Quota Limits (Primary Protection)**
+   - Set daily quotas in Google Cloud Console
+   - Maps JavaScript API: 900 requests/day (safe limit)
+   - Geocoding API: 1,000 requests/day
+   - Once limit hit, Google returns errors instead of charging
+
+2. **Application-Level Toggle (Manual Control)**
+   - Add config setting: `GOOGLE_MAPS_ENABLED=true/false`
+   - Code checks before loading map
+   - If disabled, show simple text input for location instead
+   - Manual toggle if needed
+
+3. **Budget Alerts (Monitoring)**
+   - Set up in Google Cloud Console
+   - Email/SMS alerts at 50%, 90%, 100% thresholds
+   - Doesn't auto-disable, just warns
+
+4. **Budget Auto-Disable (Advanced)**
+   - Google Cloud can disable billing when budget exceeded
+   - Requires Cloud Function setup
+   - Fully automatic protection
+
+**Config Variables Needed:**
+- `GOOGLE_MAPS_API_KEY` - The API key (stored as secret)
+- `GOOGLE_MAPS_ENABLED` - Toggle on/off (default: true)
+
+**Fallback Behavior When Disabled:**
+- Show text input fields for location (address, town, county)
+- Hide "Pick on Map" button
+- Existing lat/lng data still works for "View on Map" links
+
+**Free Tier Info:**
+- Google provides $200/month credit
+- Covers approximately 28,000 map loads/month
+- For a growing angling platform, this should be sufficient
+
 ### Technical Debt
 - Review LSP diagnostics in admin/members.php and create_club.php
 - Consider adding database migrations system for production updates
