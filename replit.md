@@ -185,6 +185,36 @@ WHERE NOT EXISTS (
 - [ ] Angler goals/wishlists
 - [ ] Integration with national specimen fish committee
 
+### SEO Strategy (Future Exploration)
+Club and member profiles have significant SEO potential for local search visibility.
+
+**Club Profiles SEO:**
+- Dynamic meta tags per club (title/description with location + club type)
+- Schema.org LocalBusiness/SportsOrganization structured data
+- Expose public content: waters, species, competitions, news, sponsors
+- Friendly URLs: `/club/dublin-pike-anglers` instead of `?id=5`
+- Open Graph tags for social sharing
+
+**Member Profiles SEO (Privacy-First):**
+- Keep member data private by default
+- Optional public angler profiles (opt-in for guides/competitive anglers)
+- Aggregated public content: club records, competition results (with consent)
+- Public leaderboards with member consent
+
+**Technical SEO Tasks:**
+- [ ] Add dynamic `<title>` and `<meta description>` to club pages
+- [ ] Implement Open Graph tags for social sharing
+- [ ] Add schema.org structured data markup
+- [ ] Create sitemap.xml (clubs, competitions, news)
+- [ ] Add robots.txt with crawl rules
+- [ ] Friendly URL rewrites for clubs
+- [ ] Internal linking improvements
+
+**Content Opportunities:**
+- Club news as indexable blog content
+- Public competition results pages
+- Aggregated pages: "Pike Fishing Clubs in Ireland", "Best Trout Waters"
+
 ### Technical Debt
 - [ ] Review LSP diagnostics in admin/members.php and create_club.php
 - [ ] Consider adding database migrations system for production updates
